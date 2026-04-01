@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clue Tracker v3 - the clause-based logic Logic</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .site-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 10px 20px; background: rgba(30, 30, 30, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #3e3e42; }
+        .site-nav a { color: #4ec9b0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: opacity 0.2s; }
+        .site-nav a:hover { opacity: 0.7; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 50px 20px 20px;
+        }
+
+        header {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        h1 { color: #4ec9b0; margin-bottom: 10px; }
+        
+        .setup, .tracker {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .setup-step h2 {
+            color: #4ec9b0;
+            margin-bottom: 20px;
+        }
+        
+        .player-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .player-input-row label {
+            min-width: 100px;
+            color: #d4d4d4;
+        }
+        
+        .player-input-row input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            color: #d4d4d4;
+        }
+        
+        .player-input-row input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .you-indicator {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        
+        .card-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .card-select-item {
+            padding: 12px;
+            background: #1e1e1e;
+            border: 2px solid #3e3e42;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .card-select-item:hover {
+            background: #2d2d30;
+            border-color: #4ec9b0;
+        }
+        
+        .card-select-item.selected {
+            background: #4ec9b0;
+            color: #1e1e1e;
+            border-color: #4ec9b0;
+            font-weight: bold;
+        }
+        
+        .card-category-header {
+            grid-column: 1 / -1;
+            background: #0e639c;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .setup input, .setup button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        
+        .setup button {
+            background: #0e639c;
+            color: white;
+            cursor: pointer;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #3e3e42;
+        }
+        
+        th { background: #0e639c; color: white; }
+        
+        td.cell {
+            cursor: pointer;
+            background: #2d2d30;
+            user-select: none;
+        }
+        
+        td.cell:hover { background: #3e3e42; }
+        td.cell.has { background: #4ec9b0; color: white; }
+        td.cell.not { background: #f48771; color: white; }
+        td.cell.maybe { background: #569cd6; color: white; }
+        
+        .guess-form {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .guess-form select, .guess-form button {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            background: #2d2d30;
+            color: #d4d4d4;
+        }
+        
+        .guess-form button {
+            background: #0e639c;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .solution {
+            background: #27ae60;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: white;
+        }
+        
+        .solution h3 { margin-bottom: 10px; }
+        
+        .guess-suggestions {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #4ec9b0;
+        }
+        
+        .suggestion {
+            background: #1e1e1e;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #4ec9b0;
+        }
+        
+        .suggestion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .suggestion-rank {
+            background: #4ec9b0;
+            color: #1e1e1e;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .suggestion-cards {
+            font-size: 1.1em;
+            color: #dcdcaa;
+            margin: 8px 0;
+        }
+        
+        .suggestion-reason {
+            color: #858585;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+        
+        .suggestion-score {
+            color: #569cd6;
+            font-weight: bold;
+        }
+        
+        .use-guess-btn {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .use-guess-btn:hover {
+            background: #1177bb;
+        }
+        
+        .debug {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .debug-line { margin: 2px 0; }
+    </style>
+</head>
+<body>
+    <nav class="site-nav"><a href="/">← Vibing with Code</a></nav>
+    <header>
+        <h1>🔍 Clue Tracker v3</h1>
+        <p>Powered by Clause-Based Logic</p>
+        <div style="margin-top: 10px;">
+            <a href="clue_player_intelligence.html" style="color: #4ec9b0; margin-right: 10px;">Player Intel</a>
+            <a href="clue_possibilities_v2.html" style="color: #4ec9b0; margin-right: 10px;">Possibilities</a>
+            <a href="clue_diagnostic.html" style="color: #4ec9b0; margin-right: 10px;">Diagnostic</a>
+            <a href="clue_stats_graph.html" style="color: #4ec9b0; margin-right: 10px;">Stats</a>
+            <button onclick="resetGame()" style="background: #f48771; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">Reset Game</button>
+        </div>
+    </header>
+    
+    <div class="setup" id="setup">
+        <div id="step1" class="setup-step">
+            <h2>Step 1: Number of Players</h2>
+            <label>How many players? <input type="number" id="numPlayers" value="6" min="3" max="6"></label>
+            <button onclick="goToStep2()">Next</button>
+        </div>
+        
+        <div id="step2" class="setup-step" style="display: none;">
+            <h2>Step 2: Player Names (Turn Order)</h2>
+            <p style="margin-bottom: 15px; color: #858585;">Enter player names in <strong>turn order</strong> (who goes first, second, etc.)</p>
+            <div id="playerNamesForm"></div>
+            <button onclick="goToStep3()">Next</button>
+            <button onclick="goToStep1()" style="background: #666; margin-left: 10px;">Back</button>
+        </div>
+        
+        <div id="step3" class="setup-step" style="display: none;">
+            <h2>Step 3: Select Your Cards</h2>
+            <p style="margin-bottom: 15px; color: #858585;">You are: <strong id="yourPlayerName"></strong></p>
+            <p style="margin-bottom: 15px; color: #858585;">Click on the cards you have in your hand:</p>
+            <div id="cardSelection"></div>
+            <button onclick="finishSetup()">Start Game</button>
+            <button onclick="goToStep2()" style="background: #666; margin-left: 10px;">Back</button>
+        </div>
+    </div>
+    
+    <div class="tracker" id="tracker" style="display:none;">
+        <h2>Clue Sheet</h2>
+        <div id="clueSheet"></div>
+        
+        <h2>Record Guess</h2>
+        <div class="guess-form" id="guessForm"></div>
+        
+        <h2>Suggested Guesses</h2>
+        <div class="guess-suggestions" id="guessSuggestions"></div>
+        
+        <h2>Solution</h2>
+        <div class="solution" id="solution"></div>
+        
+        <h2>Final Accusation</h2>
+        <div class="guess-form" id="accusationForm">
+            <div>
+                <label>Accuser: <select id="accuserPlayer"></select></label>
+                <label>Suspect: <select id="accuseSuspect"></select></label>
+                <label>Weapon: <select id="accuseWeapon"></select></label>
+                <label>Location: <select id="accuseLocation"></select></label>
+                <label>Result: 
+                    <select id="accuseResult">
+                        <option value="">-- Select Result --</option>
+                        <option value="correct">✓ Correct - Won Game</option>
+                        <option value="incorrect">✗ Incorrect - Lost Turn</option>
+                    </select>
+                </label>
+                <button onclick="recordAccusation()">Record Accusation</button>
+            </div>
+            <div id="accusationHistory" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+    
+    <script>
+        // the clause-based logic's data structure
+        let SUSPECTS = ["Scarlett", "Green", "Peacock", "Plum", "Mustard", "Orchid"];
+        const WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"];
+        const LOCATIONS = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Billiard Room", "Library", "Lounge", "Hall", "Study"];
+        let ALL_CARDS = [...SUSPECTS, ...WEAPONS, ...LOCATIONS];
+        
+        let game = {
+            players: [],
+            playerData: [], // { has: Set, notHas: Set, clauses: [Set] }
+            solution: { suspect: null, weapon: null, location: null },
+            guesses: [], // Track all guesses for compatibility
+            myPlayerIndex: -1, // Which player is the user
+            myCards: [], // Cards the user has
+            accusations: [] // Track final accusations
+        };
+        
+        let setupData = {
+            numPlayers: 6,
+            playerNames: [],
+            myPlayerIndex: -1,
+            selectedCards: []
+        };
+        
+        function goToStep2() {
+            setupData.numPlayers = parseInt(document.getElementById('numPlayers').value);
+            
+            // Generate player name inputs
+            let html = '';
+            for (let i = 0; i < setupData.numPlayers; i++) {
+                const defaultName = SUSPECTS[i] || `Player ${i + 1}`;
+                html += `<div class="player-input-row">`;
+                html += `<label>Player ${i + 1}:</label>`;
+                html += `<input type="text" id="player_${i}" value="${defaultName}" placeholder="Enter name">`;
+                html += `<input type="radio" name="myPlayer" value="${i}" ${i === 0 ? 'checked' : ''}>`;
+                html += `<span class="you-indicator">You?</span>`;
+                html += `</div>`;
+            }
+            
+            document.getElementById('playerNamesForm').innerHTML = html;
+            document.getElementById('step1').style.display = 'none';
+            document.getElementById('step2').style.display = 'block';
+        }
+        
+        function goToStep1() {
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('step1').style.display = 'block';
+        }
+        
+        function goToStep3() {
+            // Collect player names
+            setupData.playerNames = [];
+            for (let i = 0; i < setupData.numPlayers; i++) {
+                const name = document.getElementById(`player_${i}`).value.trim();
+                setupData.playerNames.push(name || `Player ${i + 1}`);
+            }
+            
+            // Get which player is "you"
+            const selectedRadio = document.querySelector('input[name="myPlayer"]:checked');
+            setupData.myPlayerIndex = parseInt(selectedRadio.value);
+            
+            // IMPORTANT: Update SUSPECTS array to match player names NOW
+            // This ensures card selection shows the correct names
+            for (let i = 0; i < setupData.playerNames.length; i++) {
+                SUSPECTS[i] = setupData.playerNames[i];
+            }
+            // Rebuild ALL_CARDS
+            ALL_CARDS = [...SUSPECTS, ...WEAPONS, ...LOCATIONS];
+            
+            // Show card selection
+            document.getElementById('yourPlayerName').textContent = setupData.playerNames[setupData.myPlayerIndex];
+            
+            let html = '<div class="card-selection-grid">';
+            
+            // Suspects - now using updated player names
+            html += '<div class="card-category-header">SUSPECTS</div>';
+            SUSPECTS.forEach(card => {
+                html += `<div class="card-select-item" onclick="toggleCardSelection('${card}')" id="card_${card.replace(/\s/g, '_')}">${card}</div>`;
+            });
+            
+            // Weapons
+            html += '<div class="card-category-header">WEAPONS</div>';
+            WEAPONS.forEach(card => {
+                html += `<div class="card-select-item" onclick="toggleCardSelection('${card}')" id="card_${card.replace(/\s/g, '_')}">${card}</div>`;
+            });
+            
+            // Locations
+            html += '<div class="card-category-header">LOCATIONS</div>';
+            LOCATIONS.forEach(card => {
+                html += `<div class="card-select-item" onclick="toggleCardSelection('${card}')" id="card_${card.replace(/\s/g, '_')}">${card}</div>`;
+            });
+            
+            html += '</div>';
+            html += `<p style="color: #858585; margin-top: 10px;">Selected: <span id="cardCount" style="color: #4ec9b0; font-weight: bold;">0</span> cards</p>`;
+            
+            document.getElementById('cardSelection').innerHTML = html;
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('step3').style.display = 'block';
+        }
+        
+        function toggleCardSelection(card) {
+            const element = document.getElementById(`card_${card.replace(/\s/g, '_')}`);
+            const index = setupData.selectedCards.indexOf(card);
+            
+            if (index === -1) {
+                setupData.selectedCards.push(card);
+                element.classList.add('selected');
+            } else {
+                setupData.selectedCards.splice(index, 1);
+                element.classList.remove('selected');
+            }
+            
+            document.getElementById('cardCount').textContent = setupData.selectedCards.length;
+        }
+        
+        function finishSetup() {
+            // Validate card count
+            const expectedCards = Math.floor(18 / setupData.numPlayers);
+            if (setupData.selectedCards.length !== expectedCards) {
+                alert(`You should have ${expectedCards} cards. You selected ${setupData.selectedCards.length}.`);
+                return;
+            }
+            
+            // Initialize game
+            game.players = setupData.playerNames;
+            game.myPlayerIndex = setupData.myPlayerIndex;
+            game.myCards = setupData.selectedCards;
+            
+            // SUSPECTS array already updated in goToStep3
+            // Just rebuild ALL_CARDS to be safe
+            ALL_CARDS = [...SUSPECTS, ...WEAPONS, ...LOCATIONS];
+            
+            game.playerData = game.players.map(() => ({
+                has: new Set(),
+                notHas: new Set(),
+                clauses: []
+            }));
+            
+            // Mark your cards
+            setupData.selectedCards.forEach(card => {
+                learnCard(game.myPlayerIndex, card, true);
+            });
+            
+            game.guesses = [];
+            
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('tracker').style.display = 'block';
+            
+            renderClueSheet();
+            renderGuessForm();
+            renderSolution();
+            renderGuessSuggestions();
+            renderAccusationHistory();
+            saveGame();
+            log(`Game started with ${setupData.numPlayers} players. You are ${game.players[game.myPlayerIndex]}.`);
+        }
+        
+        function saveGame() {
+            // Convert Sets to Arrays for JSON
+            const saveData = {
+                players: game.players,
+                suspects: SUSPECTS, // Save suspect names
+                myPlayerIndex: game.myPlayerIndex,
+                myCards: game.myCards,
+                playerData: game.playerData.map(data => ({
+                    has: [...data.has],
+                    notHas: [...data.notHas],
+                    clauses: data.clauses.map(clause => [...clause])
+                })),
+                solution: game.solution,
+                guesses: game.guesses,
+                accusations: game.accusations
+            };
+            localStorage.setItem('clueGame_v3', JSON.stringify(saveData));
+            
+            // Also save in old format for compatibility with other tools
+            saveCompatibleFormat();
+        }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('clueGame_v3');
+            if (saved) {
+                const data = JSON.parse(saved);
+                game.players = data.players;
+                game.myPlayerIndex = data.myPlayerIndex || -1;
+                game.myCards = data.myCards || [];
+                game.accusations = data.accusations || [];
+                
+                // Load suspect names if saved
+                if (data.suspects && data.suspects.length === 6) {
+                    SUSPECTS.splice(0, 6, ...data.suspects);
+                }
+                
+                game.playerData = data.playerData.map(pd => ({
+                    has: new Set(pd.has),
+                    notHas: new Set(pd.notHas),
+                    clauses: pd.clauses.map(c => new Set(c))
+                }));
+                game.solution = data.solution;
+                game.guesses = data.guesses || [];
+                
+                // Rebuild ALL_CARDS
+                ALL_CARDS = [...SUSPECTS, ...WEAPONS, ...LOCATIONS];
+                
+                return true;
+            }
+            return false;
+        }
+        
+        function saveCompatibleFormat() {
+            // Save in format that possibilities/diagnostic can read
+            const knowledge = {};
+            game.players.forEach((player, i) => {
+                knowledge[player] = {};
+                const data = game.playerData[i];
+                
+                ALL_CARDS.forEach(card => {
+                    if (data.has.has(card)) {
+                        knowledge[player][card] = true;
+                    } else if (data.notHas.has(card)) {
+                        knowledge[player][card] = false;
+                    } else if (data.clauses.some(clause => clause.has(card))) {
+                        knowledge[player][card] = 'maybe';
+                    } else {
+                        knowledge[player][card] = null;
+                    }
+                });
+            });
+            
+            // Convert clauses to showConstraints format
+            const showConstraints = [];
+            game.players.forEach((player, i) => {
+                const data = game.playerData[i];
+                data.clauses.forEach(clause => {
+                    // Check if clause is satisfied (player has one of the cards)
+                    const satisfied = [...clause].some(card => data.has.has(card));
+                    showConstraints.push({
+                        player: player,
+                        cards: [...clause],
+                        resolved: satisfied || clause.size === 0
+                    });
+                });
+            });
+            
+            const compatibleData = {
+                players: game.players,
+                suspects: SUSPECTS,
+                myCards: [],
+                knowledge,
+                guesses: game.guesses,
+                showConstraints: showConstraints,
+                playerCardCounts: {},
+                solutionMustBe: {
+                    suspect: game.solution.suspect ? [game.solution.suspect] : [],
+                    weapon: game.solution.weapon ? [game.solution.weapon] : [],
+                    location: game.solution.location ? [game.solution.location] : []
+                },
+                solutionCannotBe: {
+                    suspect: SUSPECTS.filter(s => 
+                        game.players.some((_, i) => game.playerData[i].has.has(s))
+                    ),
+                    weapon: WEAPONS.filter(w => 
+                        game.players.some((_, i) => game.playerData[i].has.has(w))
+                    ),
+                    location: LOCATIONS.filter(l => 
+                        game.players.some((_, i) => game.playerData[i].has.has(l))
+                    )
+                }
+            };
+            
+            // Calculate card counts
+            game.players.forEach((player, i) => {
+                const hasCount = game.playerData[i].has.size;
+                compatibleData.playerCardCounts[player] = hasCount > 0 ? hasCount : Math.floor(18 / game.players.length);
+            });
+            
+            localStorage.setItem('clueGame', JSON.stringify(compatibleData));
+        }
+        
+        function log(message) {
+            // Keep log function for internal use, but don't display
+            console.log(`[Clue] ${message}`);
+        }
+        
+        function generateGuessSuggestions() {
+            const suggestions = [];
+            
+            // Get all confirmed cards (cards we already know who has)
+            const confirmedCards = new Set();
+            game.players.forEach((player, i) => {
+                game.playerData[i].has.forEach(card => confirmedCards.add(card));
+            });
+            
+            // Add user's cards to confirmed (we definitely don't want to guess these!)
+            game.myCards.forEach(card => confirmedCards.add(card));
+            
+            // Analyze player uncertainty (within THIS game)
+            const playerUncertainty = {};
+            game.players.forEach((player, i) => {
+                const data = game.playerData[i];
+                let uncertainCount = 0;
+                
+                ALL_CARDS.forEach(card => {
+                    if (!data.has.has(card) && !data.notHas.has(card)) {
+                        uncertainCount++;
+                    }
+                });
+                
+                playerUncertainty[player] = {
+                    index: i,
+                    uncertainCount,
+                    clauses: data.clauses.length
+                };
+            });
+            
+            // Analyze constraint card frequency across players
+            const constraintCardFrequency = {};
+            game.players.forEach((player, playerIdx) => {
+                const data = game.playerData[playerIdx];
+                data.clauses.forEach(clause => {
+                    [...clause].forEach(card => {
+                        if (!constraintCardFrequency[card]) {
+                            constraintCardFrequency[card] = new Set();
+                        }
+                        constraintCardFrequency[card].add(playerIdx);
+                    });
+                });
+            });
+            
+            // Analyze self-overlapping constraints (same player, multiple constraints with shared cards)
+            const selfOverlapScores = {};
+            game.players.forEach((player, playerIdx) => {
+                const data = game.playerData[playerIdx];
+                const clauses = data.clauses.map(c => [...c]);
+                
+                // Check each card in constraints
+                const cardClauseCounts = {};
+                clauses.forEach(clause => {
+                    clause.forEach(card => {
+                        cardClauseCounts[card] = (cardClauseCounts[card] || 0) + 1;
+                    });
+                });
+                
+                // Cards appearing in 2+ constraints for same player are high value
+                Object.entries(cardClauseCounts).forEach(([card, count]) => {
+                    if (count >= 2) {
+                        selfOverlapScores[card] = (selfOverlapScores[card] || 0) + count * 40; // Big bonus
+                    }
+                });
+            });
+            
+            // Determine game phase
+            const totalGuesses = game.guesses.length;
+            const gamePhase = totalGuesses < 10 ? 'early' : totalGuesses < 20 ? 'mid' : 'late';
+            
+            // Strategy 1: Self-Overlapping Constraint Resolution (HIGHEST when present)
+            game.players.forEach((player, playerIdx) => {
+                const data = game.playerData[playerIdx];
+                const clauses = data.clauses.map(c => [...c]);
+                
+                if (clauses.length >= 2) {
+                    // Find cards that appear in multiple constraints for THIS player
+                    const cardClauseCounts = {};
+                    clauses.forEach((clause, idx) => {
+                        clause.forEach(card => {
+                            if (!cardClauseCounts[card]) cardClauseCounts[card] = [];
+                            cardClauseCounts[card].push(idx);
+                        });
+                    });
+                    
+                    // Build guess with cards appearing in multiple constraints
+                    const overlapCards = Object.entries(cardClauseCounts)
+                        .filter(([card, clauseIndices]) => clauseIndices.length >= 2 && !confirmedCards.has(card))
+                        .map(([card]) => card);
+                    
+                    if (overlapCards.length > 0) {
+                        const suspect = overlapCards.find(c => SUSPECTS.includes(c)) || getRandomUnknown('suspect', confirmedCards);
+                        const weapon = overlapCards.find(c => WEAPONS.includes(c)) || getRandomUnknown('weapon', confirmedCards);
+                        const location = overlapCards.find(c => LOCATIONS.includes(c)) || getRandomUnknown('location', confirmedCards);
+                        
+                        if (!confirmedCards.has(suspect) || !confirmedCards.has(weapon) || !confirmedCards.has(location)) {
+                            const overlapBonus = overlapCards.length * 50; // Huge bonus for self-overlap
+                            const nextPlayerIdx = (game.myPlayerIndex + 1) % game.players.length;
+                            const turnBonus = playerIdx === nextPlayerIdx ? 15 : 0;
+                            
+                            suggestions.push({
+                                suspect,
+                                weapon,
+                                location,
+                                score: 120 + overlapBonus + turnBonus,
+                                reason: `Resolves ${overlapCards.length} overlapping constraints for ${player}${playerIdx === nextPlayerIdx ? ' - tests next player!' : ''}`,
+                                priority: 'self-overlap'
+                            });
+                        }
+                    }
+                }
+            });
+            
+            // Strategy 2: Target High-Uncertainty Players (emphasis in early/mid game)
+            if (gamePhase === 'early' || gamePhase === 'mid') {
+                const highUncertaintyThreshold = gamePhase === 'early' ? 12 : 10;
+                
+                Object.entries(playerUncertainty).forEach(([player, info]) => {
+                    if (info.uncertainCount >= highUncertaintyThreshold) {
+                        // Find cards this player doesn't know about
+                        const data = game.playerData[info.index];
+                        const unknownToPlayer = ALL_CARDS.filter(card => 
+                            !data.has.has(card) && 
+                            !data.notHas.has(card) &&
+                            !confirmedCards.has(card)
+                        );
+                        
+                        if (unknownToPlayer.length >= 3) {
+                            const suspect = unknownToPlayer.find(c => SUSPECTS.includes(c)) || getRandomUnknown('suspect', confirmedCards);
+                            const weapon = unknownToPlayer.find(c => WEAPONS.includes(c)) || getRandomUnknown('weapon', confirmedCards);
+                            const location = unknownToPlayer.find(c => LOCATIONS.includes(c)) || getRandomUnknown('location', confirmedCards);
+                            
+                            const cardsTargetingPlayer = [suspect, weapon, location].filter(c => unknownToPlayer.includes(c)).length;
+                            
+                            if (cardsTargetingPlayer >= 2) {
+                                suggestions.push({
+                                    suspect,
+                                    weapon,
+                                    location,
+                                    score: 90 + (info.uncertainCount * 3) + (cardsTargetingPlayer * 10),
+                                    reason: `Targets ${player} (${info.uncertainCount} unknown cards) - tests ${cardsTargetingPlayer}/3 of their unknowns`,
+                                    priority: 'high-uncertainty'
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Strategy 3: Maximum Information Gain with Location Weighting
+            const cardUncertainty = {};
+            
+            ALL_CARDS.forEach(card => {
+                if (confirmedCards.has(card)) return;
+                
+                let unknownCount = 0;
+                let weight = 1.0;
+                
+                // Locations are worth more (based on analysis)
+                if (LOCATIONS.includes(card)) {
+                    weight = 1.5;
+                }
+                
+                game.players.forEach((p, i) => {
+                    const data = game.playerData[i];
+                    if (!data.has.has(card) && !data.notHas.has(card)) {
+                        unknownCount++;
+                    }
+                });
+                
+                if (unknownCount >= 3) {
+                    cardUncertainty[card] = {
+                        count: unknownCount,
+                        weightedScore: unknownCount * weight,
+                        type: SUSPECTS.includes(card) ? 'suspect' : 
+                              WEAPONS.includes(card) ? 'weapon' : 'location'
+                    };
+                }
+            });
+            
+            // Create high-information combinations
+            const uncertainSuspects = Object.entries(cardUncertainty).filter(([c, info]) => info.type === 'suspect').sort((a, b) => b[1].weightedScore - a[1].weightedScore);
+            const uncertainWeapons = Object.entries(cardUncertainty).filter(([c, info]) => info.type === 'weapon').sort((a, b) => b[1].weightedScore - a[1].weightedScore);
+            const uncertainLocations = Object.entries(cardUncertainty).filter(([c, info]) => info.type === 'location').sort((a, b) => b[1].weightedScore - a[1].weightedScore);
+            
+            // Take top 3 from each category
+            for (let i = 0; i < Math.min(3, uncertainSuspects.length); i++) {
+                for (let j = 0; j < Math.min(3, uncertainWeapons.length); j++) {
+                    for (let k = 0; k < Math.min(3, uncertainLocations.length); k++) {
+                        const suspect = uncertainSuspects[i][0];
+                        const weapon = uncertainWeapons[j][0];
+                        const location = uncertainLocations[k][0];
+                        
+                        const totalWeighted = uncertainSuspects[i][1].weightedScore + 
+                                             uncertainWeapons[j][1].weightedScore + 
+                                             uncertainLocations[k][1].weightedScore;
+                        
+                        // Add self-overlap bonus if any cards have it
+                        const selfOverlapBonus = (selfOverlapScores[suspect] || 0) + 
+                                                 (selfOverlapScores[weapon] || 0) + 
+                                                 (selfOverlapScores[location] || 0);
+                        
+                        suggestions.push({
+                            suspect,
+                            weapon,
+                            location,
+                            score: totalWeighted * 8 + selfOverlapBonus,
+                            reason: `High info gain (S:${uncertainSuspects[i][1].count} W:${uncertainWeapons[j][1].count} L:${uncertainLocations[k][1].count} players)`,
+                            priority: 'information'
+                        });
+                    }
+                }
+            }
+            
+            // Strategy 4: Multi-Player Constraint Resolution (Mid-game focus)
+            if (gamePhase === 'mid' || gamePhase === 'late') {
+                game.players.forEach((player, playerIdx) => {
+                    const data = game.playerData[playerIdx];
+                    data.clauses.forEach(clause => {
+                        const clauseCards = [...clause];
+                        if (clauseCards.length >= 2 && clauseCards.length <= 4) {
+                            // Check if any cards in this constraint appear in other players' constraints
+                            const multiPlayerCards = clauseCards.filter(card => 
+                                constraintCardFrequency[card] && constraintCardFrequency[card].size > 1
+                            );
+                            
+                            if (multiPlayerCards.length > 0) {
+                                const unconfirmedInClause = clauseCards.filter(c => !confirmedCards.has(c));
+                                
+                                if (unconfirmedInClause.length > 0) {
+                                    const suspect = unconfirmedInClause.find(c => SUSPECTS.includes(c)) || getRandomUnknown('suspect', confirmedCards);
+                                    const weapon = unconfirmedInClause.find(c => WEAPONS.includes(c)) || getRandomUnknown('weapon', confirmedCards);
+                                    const location = unconfirmedInClause.find(c => LOCATIONS.includes(c)) || getRandomUnknown('location', confirmedCards);
+                                    
+                                    if (!confirmedCards.has(suspect) || !confirmedCards.has(weapon) || !confirmedCards.has(location)) {
+                                        const score = 70 + (multiPlayerCards.length * 20);
+                                        
+                                        suggestions.push({
+                                            suspect,
+                                            weapon,
+                                            location,
+                                            score,
+                                            reason: `Resolves shared constraint for ${player} (${multiPlayerCards.length} cards affect multiple players)`,
+                                            priority: 'multi-constraint'
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            
+            // Strategy 5: Solution Testing (Late game only, when close)
+            if (gamePhase === 'late') {
+                const suspectsSolved = SUSPECTS.filter(s => 
+                    game.players.some((p, i) => game.playerData[i].has.has(s))
+                ).length;
+                const weaponsSolved = WEAPONS.filter(w => 
+                    game.players.some((p, i) => game.playerData[i].has.has(w))
+                ).length;
+                const locationsSolved = LOCATIONS.filter(l => 
+                    game.players.some((p, i) => game.playerData[i].has.has(l))
+                ).length;
+                
+                const closeToSolving = suspectsSolved >= 4 || weaponsSolved >= 4 || locationsSolved >= 7;
+                
+                if (closeToSolving && (!game.solution.suspect || !game.solution.weapon || !game.solution.location)) {
+                    const potentialSolution = {
+                        suspect: game.solution.suspect || getMostLikelySolution('suspect', confirmedCards),
+                        weapon: game.solution.weapon || getMostLikelySolution('weapon', confirmedCards),
+                        location: game.solution.location || getMostLikelySolution('location', confirmedCards)
+                    };
+                    
+                    if (potentialSolution.suspect && potentialSolution.weapon && potentialSolution.location) {
+                        const allUnconfirmed = !confirmedCards.has(potentialSolution.suspect) &&
+                                              !confirmedCards.has(potentialSolution.weapon) &&
+                                              !confirmedCards.has(potentialSolution.location);
+                        
+                        if (allUnconfirmed) {
+                            suggestions.push({
+                                suspect: potentialSolution.suspect,
+                                weapon: potentialSolution.weapon,
+                                location: potentialSolution.location,
+                                score: 60,
+                                reason: `Test likely solution (${suspectsSolved}/6 S, ${weaponsSolved}/6 W, ${locationsSolved}/9 L known)`,
+                                priority: 'solution'
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Remove duplicates and sort by score
+            const unique = [];
+            const seen = new Set();
+            suggestions.forEach(s => {
+                const key = `${s.suspect}-${s.weapon}-${s.location}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    unique.push(s);
+                }
+            });
+            
+            return unique.sort((a, b) => b.score - a.score).slice(0, 5);
+        }
+        
+        function getRandomUnknown(type, confirmedCards) {
+            const cards = getCardsOfType(type);
+            const unknown = cards.filter(card => {
+                // Skip confirmed cards
+                if (confirmedCards.has(card)) return false;
+                
+                // Not in solution and not confirmed in anyone's hand
+                const inSolution = type === 'suspect' ? game.solution.suspect === card :
+                                 type === 'weapon' ? game.solution.weapon === card :
+                                 game.solution.location === card;
+                const inHands = game.players.some((p, i) => game.playerData[i].has.has(card));
+                return !inSolution && !inHands;
+            });
+            return unknown.length > 0 ? unknown[Math.floor(Math.random() * unknown.length)] : cards[0];
+        }
+        
+        function getMostLikelySolution(type, confirmedCards) {
+            const cards = getCardsOfType(type);
+            let maxEliminations = -1;
+            let bestCard = null;
+            
+            cards.forEach(card => {
+                // Skip confirmed cards
+                if (confirmedCards.has(card)) return;
+                
+                const eliminations = game.players.filter((p, i) => 
+                    game.playerData[i].notHas.has(card)
+                ).length;
+                
+                if (eliminations > maxEliminations) {
+                    maxEliminations = eliminations;
+                    bestCard = card;
+                }
+            });
+            
+            return bestCard;
+        }
+        
+        function renderGuessSuggestions() {
+            const suggestions = generateGuessSuggestions();
+            
+            if (suggestions.length === 0) {
+                document.getElementById('guessSuggestions').innerHTML = '<p style="color: #858585;">No suggestions available yet. Make some guesses to gather information!</p>';
+                return;
+            }
+            
+            let html = '<h3 style="color: #4ec9b0; margin-bottom: 15px;">🎯 Recommended Guesses</h3>';
+            
+            suggestions.forEach((s, idx) => {
+                const priorityColors = {
+                    'self-overlap': '#e74c3c',    // Red - self-overlapping constraints (HIGHEST)
+                    'high-uncertainty': '#f39c12', // Orange - high-uncertainty players
+                    'information': '#4ec9b0',      // Green - information gain
+                    'multi-constraint': '#dcdcaa', // Yellow - multi-player constraints
+                    'solution': '#9b59b6'          // Purple - solution testing (lowest)
+                };
+                
+                html += `<div class="suggestion">`;
+                html += `<div class="suggestion-header">`;
+                html += `<span class="suggestion-rank" style="background: ${priorityColors[s.priority] || '#4ec9b0'};">#${idx + 1}</span>`;
+                html += `<span class="suggestion-score">Score: ${s.score}</span>`;
+                html += `</div>`;
+                html += `<div class="suggestion-cards">`;
+                html += `${s.suspect} + ${s.weapon} + ${s.location}`;
+                html += `</div>`;
+                html += `<div class="suggestion-reason">${s.reason}</div>`;
+                html += `<button class="use-guess-btn" onclick="useGuess('${s.suspect}', '${s.weapon}', '${s.location}')">Use This Guess</button>`;
+                html += `</div>`;
+            });
+            
+            document.getElementById('guessSuggestions').innerHTML = html;
+        }
+        
+        function useGuess(suspect, weapon, location) {
+            document.getElementById('suspect').value = suspect;
+            document.getElementById('weapon').value = weapon;
+            document.getElementById('location').value = location;
+            
+            // Scroll to guess form
+            document.getElementById('guessForm').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Try to load existing game on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (loadGame()) {
+                document.getElementById('setup').style.display = 'none';
+                document.getElementById('tracker').style.display = 'block';
+                renderClueSheet();
+                renderGuessForm();
+                renderSolution();
+                renderGuessSuggestions();
+                renderAccusationHistory();
+                log('Game loaded from previous session');
+            }
+        });
+        
+        function renderClueSheet() {
+            let html = '<table><thead><tr><th>Card</th>';
+            game.players.forEach((p, i) => {
+                const cardCount = game.playerData[i].has.size;
+                const totalCards = Math.floor(18 / game.players.length);
+                html += `<th style="cursor: pointer;" onclick="editPlayerName(${i})">`;
+                html += `<span id="player_${i}">${p}</span>`;
+                html += `<br><span style="font-size: 0.9em; color: #4ec9b0;">(${cardCount}/${totalCards})</span>`;
+                html += `</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            // SUSPECTS - use player names, not editable
+            html += '<tr style="background: #0e639c;"><td colspan="' + (game.players.length + 1) + '" style="text-align: center; font-weight: bold; color: white;">SUSPECTS</td></tr>';
+            game.players.forEach((playerName, cardIdx) => {
+                // Use player name as suspect name
+                const card = SUSPECTS[cardIdx];
+                html += `<tr><td>${playerName}</td>`;
+                game.players.forEach((p, i) => {
+                    const state = getCardState(i, card);
+                    html += `<td class="cell ${state}" onclick="cycleCell(${i}, '${card}')">${stateSymbol(state)}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            // WEAPONS
+            html += '<tr style="background: #0e639c;"><td colspan="' + (game.players.length + 1) + '" style="text-align: center; font-weight: bold; color: white;">WEAPONS</td></tr>';
+            WEAPONS.forEach(card => {
+                html += `<tr><td>${card}</td>`;
+                game.players.forEach((p, i) => {
+                    const state = getCardState(i, card);
+                    html += `<td class="cell ${state}" onclick="cycleCell(${i}, '${card}')">${stateSymbol(state)}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            // LOCATIONS
+            html += '<tr style="background: #0e639c;"><td colspan="' + (game.players.length + 1) + '" style="text-align: center; font-weight: bold; color: white;">LOCATIONS</td></tr>';
+            LOCATIONS.forEach(card => {
+                html += `<tr><td>${card}</td>`;
+                game.players.forEach((p, i) => {
+                    const state = getCardState(i, card);
+                    html += `<td class="cell ${state}" onclick="cycleCell(${i}, '${card}')">${stateSymbol(state)}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('clueSheet').innerHTML = html;
+        }
+        
+        function editPlayerName(playerIndex) {
+            const currentName = game.players[playerIndex];
+            const newName = prompt(`Edit player name:`, currentName);
+            if (newName && newName.trim() !== '' && newName !== currentName) {
+                const oldName = game.players[playerIndex];
+                const oldSuspect = SUSPECTS[playerIndex];
+                const newNameTrimmed = newName.trim();
+                
+                // Update player name
+                game.players[playerIndex] = newNameTrimmed;
+                
+                // Update suspect name to match
+                SUSPECTS[playerIndex] = newNameTrimmed;
+                
+                // Update all references from old suspect name to new
+                game.players.forEach((player, i) => {
+                    const data = game.playerData[i];
+                    
+                    // Update has set
+                    if (data.has.has(oldSuspect)) {
+                        data.has.delete(oldSuspect);
+                        data.has.add(newNameTrimmed);
+                    }
+                    
+                    // Update notHas set
+                    if (data.notHas.has(oldSuspect)) {
+                        data.notHas.delete(oldSuspect);
+                        data.notHas.add(newNameTrimmed);
+                    }
+                    
+                    // Update clauses
+                    data.clauses.forEach(clause => {
+                        if (clause.has(oldSuspect)) {
+                            clause.delete(oldSuspect);
+                            clause.add(newNameTrimmed);
+                        }
+                    });
+                });
+                
+                // Update solution
+                if (game.solution.suspect === oldSuspect) {
+                    game.solution.suspect = newNameTrimmed;
+                }
+                
+                // Update guesses
+                game.guesses.forEach(guess => {
+                    if (guess.suspect === oldSuspect) {
+                        guess.suspect = newNameTrimmed;
+                    }
+                    if (guess.guesser === oldName) {
+                        guess.guesser = newNameTrimmed;
+                    }
+                    guess.responses.forEach(response => {
+                        if (response.player === oldName) {
+                            response.player = newNameTrimmed;
+                        }
+                        if (response.cardShown === oldSuspect) {
+                            response.cardShown = newNameTrimmed;
+                        }
+                    });
+                });
+                
+                // CRITICAL: Rebuild ALL_CARDS with new suspect names
+                ALL_CARDS = [...SUSPECTS, ...WEAPONS, ...LOCATIONS];
+                
+                log(`✏️ Renamed: ${oldName} → ${newNameTrimmed}`);
+                saveGame();
+                renderClueSheet();
+                renderGuessForm();
+                renderSolution();
+                renderGuessSuggestions();
+            }
+        }
+        
+        function getCardState(playerIndex, card) {
+            const data = game.playerData[playerIndex];
+            if (data.has.has(card)) return 'has';
+            if (data.notHas.has(card)) return 'not';
+            // Check if in any clause (maybe)
+            if (data.clauses.some(clause => clause.has(card))) return 'maybe';
+            return '';
+        }
+        
+        function stateSymbol(state) {
+            if (state === 'has') return '✓';
+            if (state === 'not') return '✗';
+            if (state === 'maybe') return '?';
+            return '';
+        }
+        
+        function cycleCell(playerIndex, card) {
+            const data = game.playerData[playerIndex];
+            if (data.has.has(card)) {
+                // Has -> Not
+                data.has.delete(card);
+                learnCard(playerIndex, card, false);
+            } else if (data.notHas.has(card)) {
+                // Not -> Empty
+                data.notHas.delete(card);
+                saveGame();
+            } else {
+                // Empty -> Has
+                learnCard(playerIndex, card, true);
+            }
+            renderClueSheet();
+            renderSolution();
+            renderGuessSuggestions();
+        }
+        
+        // CORE: the clause-based logic's learn_info_on_card
+        function learnCard(playerIndex, card, hasCard) {
+            const data = game.playerData[playerIndex];
+            
+            if (hasCard) {
+                data.has.add(card);
+                log(`✓ ${game.players[playerIndex]} HAS ${card}`);
+                
+                // AUTOMATIC: Mark all other players as NOT having this card
+                game.players.forEach((_, i) => {
+                    if (i !== playerIndex && !game.playerData[i].notHas.has(card)) {
+                        game.playerData[i].notHas.add(card);
+                        log(`  → Auto X: ${game.players[i]} does NOT have ${card}`);
+                        // Examine clauses for other players too - this will resolve constraints!
+                        examineClauses(i, card);
+                    }
+                });
+                
+            } else {
+                data.notHas.add(card);
+                log(`✗ ${game.players[playerIndex]} does NOT have ${card}`);
+            }
+            
+            // the clause-based logic: examine_clauses for this player
+            examineClauses(playerIndex, card);
+            
+            // the clause-based logic: check_solution
+            checkSolution(card);
+            
+            // Check if player has all their cards - mark rest as false
+            const expectedCards = Math.floor(18 / game.players.length);
+            if (data.has.size === expectedCards) {
+                ALL_CARDS.forEach(c => {
+                    if (!data.has.has(c) && !data.notHas.has(c)) {
+                        data.notHas.add(c);
+                        log(`  → Auto X (full hand): ${game.players[playerIndex]} does NOT have ${c}`);
+                    }
+                });
+            }
+            
+            // Save after every change
+            saveGame();
+        }
+        
+        // CORE: the clause-based logic's examine_clauses
+        function examineClauses(playerIndex, changedCard) {
+            const data = game.playerData[playerIndex];
+            let changed = true;
+            
+            while (changed) {
+                changed = false;
+                
+                // Remove cards from clauses that we now know player doesn't have
+                for (let i = data.clauses.length - 1; i >= 0; i--) {
+                    const clause = data.clauses[i];
+                    const newClause = new Set([...clause].filter(c => !data.notHas.has(c)));
+                    
+                    if (newClause.size === 0) {
+                        // Clause is impossible
+                        log(`⚠️ WARNING: Impossible clause for ${game.players[playerIndex]}`);
+                        data.clauses.splice(i, 1);
+                        changed = true;
+                    } else if (newClause.size === 1) {
+                        // Clause resolved to single card
+                        const card = [...newClause][0];
+                        log(`✓ Clause resolved: ${game.players[playerIndex]} must have ${card}`);
+                        data.clauses.splice(i, 1);
+                        learnCard(playerIndex, card, true);
+                        changed = true;
+                    } else if (newClause.size < clause.size) {
+                        // Clause narrowed
+                        data.clauses[i] = newClause;
+                        changed = true;
+                    }
+                }
+                
+                // If player already has a card from a clause, remove that clause
+                for (let i = data.clauses.length - 1; i >= 0; i--) {
+                    const clause = data.clauses[i];
+                    if ([...clause].some(c => data.has.has(c))) {
+                        log(`✓ Clause satisfied for ${game.players[playerIndex]}`);
+                        data.clauses.splice(i, 1);
+                        changed = true;
+                    }
+                }
+            }
+        }
+        
+        // CORE: the clause-based logic's check_solution
+        function checkSolution(changedCard) {
+            const cardType = getCardType(changedCard);
+            if (!cardType) return;
+            
+            const cardsOfType = getCardsOfType(cardType);
+            
+            // Count how many cards of this type are confirmed in player hands
+            const inPlayerHands = cardsOfType.filter(card => 
+                game.players.some((_, i) => game.playerData[i].has.has(card))
+            );
+            
+            // If we have all but one in hands, the last one MUST be solution
+            if (inPlayerHands.length === cardsOfType.length - 1) {
+                const solutionCard = cardsOfType.find(card => !inPlayerHands.includes(card));
+                if (solutionCard && game.solution[cardType] === null) {
+                    game.solution[cardType] = solutionCard;
+                    log(`🎯 SOLUTION DEDUCED: ${cardType} = ${solutionCard} (only one left)`);
+                    
+                    // Mark all players as NOT having this solution card
+                    game.players.forEach((_, i) => {
+                        if (!game.playerData[i].notHas.has(solutionCard)) {
+                            game.playerData[i].notHas.add(solutionCard);
+                            log(`  → Auto X (solution): ${game.players[i]} does NOT have ${solutionCard}`);
+                        }
+                    });
+                }
+            }
+            
+            // Alternative: Count how many cards are confirmed NOT in any player's hand
+            const notInHands = cardsOfType.filter(card => 
+                game.players.every((_, i) => game.playerData[i].notHas.has(card))
+            );
+            
+            if (notInHands.length === cardsOfType.length - 1) {
+                // All but one eliminated - that one is solution
+                const solutionCard = cardsOfType.find(card => !notInHands.includes(card));
+                if (solutionCard && game.solution[cardType] === null) {
+                    game.solution[cardType] = solutionCard;
+                    log(`🎯 SOLUTION DEDUCED: ${cardType} = ${solutionCard} (all others eliminated)`);
+                    
+                    // Mark all players as not having this card
+                    game.players.forEach((_, i) => {
+                        if (!game.playerData[i].notHas.has(solutionCard)) {
+                            game.playerData[i].notHas.add(solutionCard);
+                            log(`  → Auto X (solution): ${game.players[i]} does NOT have ${solutionCard}`);
+                        }
+                    });
+                }
+            } else if (notInHands.length === cardsOfType.length) {
+                // All eliminated - error
+                log(`❌ ERROR: All ${cardType}s eliminated!`);
+            }
+            
+            // NEW DEDUCTION: Check if any player needs exactly one more card
+            // and only one possibility exists
+            checkSinglePossibility();
+        }
+        
+
+        function checkAllSolutions() {
+            // Check all three categories for solution
+            ['suspect', 'weapon', 'location'].forEach(cardType => {
+                const cardsOfType = getCardsOfType(cardType);
+                
+                // Count how many eliminated from all players
+                const notInHands = cardsOfType.filter(card => 
+                    game.players.every((_, i) => game.playerData[i].notHas.has(card))
+                );
+                
+                if (notInHands.length === cardsOfType.length - 1) {
+                    // All but one eliminated - that one is solution
+                    const solutionCard = cardsOfType.find(card => !notInHands.includes(card));
+                    if (solutionCard && game.solution[cardType] === null) {
+                        game.solution[cardType] = solutionCard;
+                        log(`🎯 SOLUTION DEDUCED: ${cardType} = ${solutionCard} (all others eliminated)`);
+                        
+                        // Mark all players as not having this card
+                        game.players.forEach((_, i) => {
+                            if (!game.playerData[i].notHas.has(solutionCard)) {
+                                game.playerData[i].notHas.add(solutionCard);
+                                log(`  → Auto X (solution): ${game.players[i]} does NOT have ${solutionCard}`);
+                            }
+                        });
+                    }
+                }
+            });
+            
+            checkSinglePossibility();
+        }
+        
+        function checkSinglePossibility() {
+            game.players.forEach((player, playerIdx) => {
+                const data = game.playerData[playerIdx];
+                const expectedCards = Math.floor(18 / game.players.length);
+                const needsCards = expectedCards - data.has.size;
+                
+                if (needsCards === 1) {
+                    // Player needs exactly one more card
+                    // Find all cards this player could possibly have
+                    const possibleCards = ALL_CARDS.filter(c => 
+                        !data.has.has(c) && !data.notHas.has(c)
+                    );
+                    
+                    if (possibleCards.length === 1) {
+                        // Only ONE possibility left!
+                        const card = possibleCards[0];
+                        log(`💡 DEDUCTION: ${player} needs 1 more card, only ${card} possible!`);
+                        learnCard(playerIdx, card, true);
+                    } else if (possibleCards.length === 0) {
+                        log(`⚠️ WARNING: ${player} needs ${needsCards} more card(s) but has no possibilities!`);
+                    }
+                } else if (needsCards > 1) {
+                    // Check if number of possibilities equals number needed
+                    const possibleCards = ALL_CARDS.filter(c => 
+                        !data.has.has(c) && !data.notHas.has(c)
+                    );
+                    
+                    if (possibleCards.length === needsCards && needsCards > 0) {
+                        // Exact match - player must have all remaining possibilities
+                        log(`💡 DEDUCTION: ${player} needs ${needsCards} cards, exactly ${needsCards} possibilities!`);
+                        possibleCards.forEach(card => {
+                            learnCard(playerIdx, card, true);
+                        });
+                    }
+                }
+            });
+        }
+        
+        // CORE: the clause-based logic's learn_has_one_of_cards
+        function learnClause(playerIndex, cards) {
+            const data = game.playerData[playerIndex];
+            
+            // Check if we already know player has one of these
+            if ([...cards].some(c => data.has.has(c))) {
+                log(`Clause already satisfied for ${game.players[playerIndex]}`);
+                return;
+            }
+            
+            // Remove cards we know player doesn't have
+            const newClause = new Set([...cards].filter(c => !data.notHas.has(c)));
+            
+            if (newClause.size === 0) {
+                log(`⚠️ WARNING: Empty clause for ${game.players[playerIndex]}`);
+                return;
+            } else if (newClause.size === 1) {
+                // Immediately resolved
+                const card = [...newClause][0];
+                log(`✓ Immediate: ${game.players[playerIndex]} must have ${card}`);
+                learnCard(playerIndex, card, true);
+            } else {
+                // Add clause
+                data.clauses.push(newClause);
+                log(`🔒 Clause: ${game.players[playerIndex]} has one of {${[...newClause].join(', ')}}`);
+                examineClauses(playerIndex, null);
+            }
+        }
+        
+        function getCardType(card) {
+            if (SUSPECTS.includes(card)) return 'suspect';
+            if (WEAPONS.includes(card)) return 'weapon';
+            if (LOCATIONS.includes(card)) return 'location';
+            return null;
+        }
+        
+        function getCardsOfType(type) {
+            if (type === 'suspect') return SUSPECTS;
+            if (type === 'weapon') return WEAPONS;
+            if (type === 'location') return LOCATIONS;
+            return [];
+        }
+        
+        function renderGuessForm() {
+            let html = '<div>';
+            html += '<label>Guesser: <select id="guesser">';
+            game.players.forEach(p => html += `<option>${p}</option>`);
+            html += '</select></label>';
+            
+            html += '<label>Suspect: <select id="suspect">';
+            SUSPECTS.forEach(s => html += `<option>${s}</option>`);
+            html += '</select></label>';
+            
+            html += '<label>Weapon: <select id="weapon">';
+            WEAPONS.forEach(w => html += `<option>${w}</option>`);
+            html += '</select></label>';
+            
+            html += '<label>Location: <select id="location">';
+            LOCATIONS.forEach(l => html += `<option>${l}</option>`);
+            html += '</select></label>';
+            
+            html += '<button onclick="startRecordingGuess()">Record Guess</button>';
+            html += '</div>';
+            html += '<div id="guessResponses"></div>';
+            
+            document.getElementById('guessForm').innerHTML = html;
+            
+            // Also populate accusation form dropdowns
+            let accuserHtml = '';
+            game.players.forEach(p => accuserHtml += `<option>${p}</option>`);
+            document.getElementById('accuserPlayer').innerHTML = accuserHtml;
+            
+            let suspectHtml = '';
+            SUSPECTS.forEach(s => suspectHtml += `<option>${s}</option>`);
+            document.getElementById('accuseSuspect').innerHTML = suspectHtml;
+            
+            let weaponHtml = '';
+            WEAPONS.forEach(w => weaponHtml += `<option>${w}</option>`);
+            document.getElementById('accuseWeapon').innerHTML = weaponHtml;
+            
+            let locationHtml = '';
+            LOCATIONS.forEach(l => locationHtml += `<option>${l}</option>`);
+            document.getElementById('accuseLocation').innerHTML = locationHtml;
+        }
+        
+        function recordAccusation() {
+            const accuser = document.getElementById('accuserPlayer').value;
+            const suspect = document.getElementById('accuseSuspect').value;
+            const weapon = document.getElementById('accuseWeapon').value;
+            const location = document.getElementById('accuseLocation').value;
+            const result = document.getElementById('accuseResult').value;
+            
+            if (!result) {
+                alert('Please select whether the accusation was correct or incorrect');
+                return;
+            }
+            
+            const accusation = {
+                accuser,
+                suspect,
+                weapon,
+                location,
+                result,
+                timestamp: new Date().toISOString()
+            };
+            
+            game.accusations.push(accusation);
+            
+            log(`📢 ${accuser} accused: ${suspect} + ${weapon} + ${location} - ${result === 'correct' ? '✓ CORRECT!' : '✗ INCORRECT'}`);
+            
+            // Clear the form
+            document.getElementById('accuseResult').value = '';
+            
+            saveGame();
+            renderAccusationHistory();
+        }
+        
+        function renderAccusationHistory() {
+            if (game.accusations.length === 0) {
+                document.getElementById('accusationHistory').innerHTML = '';
+                return;
+            }
+            
+            let html = '<div style="background: #1e1e1e; padding: 10px; border-radius: 6px;">';
+            html += '<strong style="color: #4ec9b0;">Accusation History:</strong><br>';
+            
+            game.accusations.forEach((acc, idx) => {
+                const resultColor = acc.result === 'correct' ? '#27ae60' : '#e74c3c';
+                const resultText = acc.result === 'correct' ? '✓ WON' : '✗ FAILED';
+                
+                html += `<div style="margin: 8px 0; padding: 8px; background: #252526; border-left: 3px solid ${resultColor}; border-radius: 4px;">`;
+                html += `<span style="color: ${resultColor}; font-weight: bold;">${resultText}</span> `;
+                html += `${acc.accuser}: ${acc.suspect} + ${acc.weapon} + ${acc.location}`;
+                html += `</div>`;
+            });
+            
+            html += '</div>';
+            document.getElementById('accusationHistory').innerHTML = html;
+        }
+        
+        let currentGuess = null;
+        
+        function startRecordingGuess() {
+            const guesser = document.getElementById('guesser').value;
+            const suspect = document.getElementById('suspect').value;
+            const weapon = document.getElementById('weapon').value;
+            const location = document.getElementById('location').value;
+            const cards = [suspect, weapon, location];
+            
+            currentGuess = {
+                guesser,
+                guesserIndex: game.players.indexOf(guesser),
+                cards,
+                responses: []
+            };
+            
+            log(`🎲 ${guesser} guesses: ${cards.join(', ')}`);
+            
+            // Show response form
+            renderResponseForm();
+        }
+        
+        function renderResponseForm() {
+            const guesserIndex = currentGuess.guesserIndex;
+            let html = '<h3>Record Responses</h3>';
+            html += `<p><strong>Guess:</strong> ${currentGuess.cards.join(', ')}</p>`;
+            html += '<table style="width: 100%; margin-top: 10px;"><thead><tr>';
+            html += '<th>Player</th><th>None</th><th>Unknown</th>';
+            currentGuess.cards.forEach(card => html += `<th>${card}</th>`);
+            html += '</tr></thead><tbody>';
+            
+            // Show each player in turn order
+            let currentIndex = (guesserIndex + 1) % game.players.length;
+            while (currentIndex !== guesserIndex) {
+                const player = game.players[currentIndex];
+                html += `<tr id="row_${currentIndex}">`;
+                html += `<td><strong>${player}</strong></td>`;
+                html += `<td><input type="radio" name="response_${currentIndex}" value="no" onchange="handleResponse(${currentIndex}, 'no')"></td>`;
+                html += `<td><input type="radio" name="response_${currentIndex}" value="unknown" onchange="handleResponse(${currentIndex}, 'unknown')"></td>`;
+                currentGuess.cards.forEach(card => {
+                    html += `<td><input type="radio" name="response_${currentIndex}" value="${card}" onchange="handleResponse(${currentIndex}, '${card}')"></td>`;
+                });
+                html += '</tr>';
+                
+                currentIndex = (currentIndex + 1) % game.players.length;
+            }
+            
+            html += '</tbody></table>';
+            html += '<div style="margin-top: 15px;">';
+            html += '<button onclick="finishGuess()">Finish Recording</button>';
+            html += '<button onclick="cancelGuess()" style="margin-left: 10px; background: #666;">Cancel</button>';
+            html += '</div>';
+            
+            document.getElementById('guessResponses').innerHTML = html;
+        }
+        
+        function handleResponse(playerIndex, response) {
+            currentGuess.responses[playerIndex] = response;
+            
+            // If someone showed a card, disable remaining players
+            if (response !== 'no') {
+                const guesserIndex = currentGuess.guesserIndex;
+                let checkIndex = (playerIndex + 1) % game.players.length;
+                while (checkIndex !== guesserIndex) {
+                    const row = document.getElementById(`row_${checkIndex}`);
+                    if (row) {
+                        row.style.opacity = '0.3';
+                        const inputs = row.querySelectorAll('input');
+                        inputs.forEach(input => input.disabled = true);
+                    }
+                    checkIndex = (checkIndex + 1) % game.players.length;
+                }
+            }
+        }
+        
+        function finishGuess() {
+            if (!currentGuess) return;
+            
+            const guesserIndex = currentGuess.guesserIndex;
+            const cards = currentGuess.cards;
+            
+            // Create guess record
+            const guessRecord = {
+                guesser: currentGuess.guesser,
+                suspect: cards[0],
+                weapon: cards[1],
+                location: cards[2],
+                responses: []
+            };
+            
+            // Process responses in order
+            let currentIndex = (guesserIndex + 1) % game.players.length;
+            let foundResponder = false;
+            
+            while (currentIndex !== guesserIndex) {
+                const response = currentGuess.responses[currentIndex];
+                const player = game.players[currentIndex];
+                
+                if (!response) {
+                    // No response recorded - assume they passed
+                    cards.forEach(card => {
+                        if (!game.playerData[currentIndex].notHas.has(card)) {
+                            learnCard(currentIndex, card, false);
+                        }
+                    });
+                    guessRecord.responses.push({ player, cardShown: 'NO_CARDS' });
+                    checkAllSolutions();
+                } else if (response === 'no') {
+                    // Player has none of these cards
+                    cards.forEach(card => {
+                        if (!game.playerData[currentIndex].notHas.has(card)) {
+                            learnCard(currentIndex, card, false);
+                        }
+                    });
+                    guessRecord.responses.push({ player, cardShown: 'NO_CARDS' });
+                    checkAllSolutions();
+                } else if (response === 'unknown') {
+                    // Player showed unknown card - create clause
+                    learnClause(currentIndex, new Set(cards));
+                    guessRecord.responses.push({ player, cardShown: null });
+                    foundResponder = true;
+                    break;
+                } else {
+                    // Player showed specific card
+                    const shownCard = cards.find(c => c === response);
+                    if (shownCard) {
+                        learnCard(currentIndex, shownCard, true);
+                        guessRecord.responses.push({ player, cardShown: shownCard });
+                        foundResponder = true;
+                        break;
+                    }
+                }
+                
+                currentIndex = (currentIndex + 1) % game.players.length;
+            }
+            
+            game.guesses.push(guessRecord);
+            saveGame();
+            
+            currentGuess = null;
+            document.getElementById('guessResponses').innerHTML = '';
+            renderClueSheet();
+            renderSolution();
+            renderGuessSuggestions();
+        }
+        
+        function cancelGuess() {
+            currentGuess = null;
+            document.getElementById('guessResponses').innerHTML = '';
+        }
+        
+        function resetGame() {
+            if (confirm('Are you sure you want to reset the game? This will erase all data.')) {
+                localStorage.removeItem('clueGame_v3');
+                localStorage.removeItem('clueGame');
+                location.reload();
+            }
+        }
+        
+        function renderSolution() {
+            let html = '<h3>Current Solution</h3>';
+            html += `<p>Suspect: ${game.solution.suspect || '?'}</p>`;
+            html += `<p>Weapon: ${game.solution.weapon || '?'}</p>`;
+            html += `<p>Location: ${game.solution.location || '?'}</p>`;
+            document.getElementById('solution').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

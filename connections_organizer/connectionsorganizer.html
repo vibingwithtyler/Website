@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connections Puzzle Organizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .site-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 10px 20px; background: rgba(18, 18, 19, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #3a3a3c; }
+        .site-nav a { color: #4ec9b0; text-decoration: none; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 0.85rem; font-weight: 500; transition: opacity 0.2s; }
+        .site-nav a:hover { opacity: 0.7; }
+
+        body {
+            font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+            background: #121213;
+            min-height: 100vh;
+            padding: 50px 20px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+        }
+
+        .container {
+            background: #1a1a1b;
+            border-radius: 8px;
+            padding: 40px;
+            max-width: 1200px;
+            width: 100%;
+            box-shadow: 0 4px 23px 0 rgba(0, 0, 0, 0.2);
+            border: 1px solid #3a3a3c;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #818384;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            color: #ffffff;
+        }
+
+        h3 + p {
+            color: #818384;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .word-input {
+            padding: 12px;
+            border: 2px solid #3a3a3c;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+            text-transform: uppercase;
+            transition: border-color 0.3s;
+            background: #121213;
+            color: #ffffff;
+        }
+
+        .word-input:focus {
+            outline: none;
+            border-color: #565758;
+        }
+
+        .button {
+            background: #538d4e;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            letter-spacing: 0.5px;
+        }
+
+        .button:hover {
+            background: #6aaa64;
+        }
+
+        .button:disabled {
+            background: #3a3a3c;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .workspace {
+            display: none;
+        }
+
+        .workspace.active {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .categories-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .available-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .group-area {
+            margin-bottom: 15px;
+        }
+
+        .group-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-selector {
+            display: flex;
+            gap: 5px;
+        }
+
+        .color-btn {
+            width: 28px;
+            height: 28px;
+            border: 3px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-btn.selected {
+            border-color: #333;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #333;
+        }
+
+        .group-label {
+            font-weight: 700;
+            color: #ffffff;
+            min-width: 70px;
+            flex-shrink: 0;
+        }
+
+        .group-name-input {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 12px;
+            border: 2px solid #3a3a3c;
+            border-radius: 4px;
+            font-size: 14px;
+            background: #121213;
+            color: #ffffff;
+        }
+
+        .group-name-input:focus {
+            outline: none;
+            border-color: #565758;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            min-height: 120px;
+            padding: 15px;
+            background: #121213;
+            border-radius: 4px;
+            border: 2px solid #3a3a3c;
+            align-content: start;
+        }
+
+        .cards-container.drag-over {
+            background: #2c2c2e;
+            border-color: #565758;
+        }
+
+        .cards-container.color-yellow {
+            background: #fef7e0;
+            border-color: #f9df6d;
+        }
+
+        .cards-container.color-green {
+            background: #eef5e0;
+            border-color: #a0c35a;
+        }
+
+        .cards-container.color-blue {
+            background: #e8f0fc;
+            border-color: #b0c4ef;
+        }
+
+        .cards-container.color-purple {
+            background: #f3ebf5;
+            border-color: #ba81c5;
+        }
+
+        .card {
+            background: #818384;
+            padding: 0;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            cursor: move;
+            user-select: none;
+            box-shadow: none;
+            transition: all 0.2s;
+            border: 2px solid #3a3a3c;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            line-height: 1.2;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            background: #878a8c;
+        }
+
+        .card.dragging {
+            opacity: 0.5;
+        }
+
+        .remaining-cards {
+            margin-top: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .remaining-cards .cards-container {
+            min-height: 400px;
+            flex: 1;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .button-secondary {
+            background: #818384;
+        }
+
+        .button-secondary:hover {
+            background: #878a8c;
+        }
+
+        .button-success {
+            background: #538d4e;
+        }
+
+        .button-success:hover {
+            background: #6aaa64;
+        }
+
+        .difficulty-colors {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #121213;
+            border-radius: 4px;
+            border: 1px solid #3a3a3c;
+        }
+
+        .difficulty-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #818384;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .color-box.yellow { background: #f9df6d; }
+        .color-box.green { background: #a0c35a; }
+        .color-box.blue { background: #b0c4ef; }
+        .color-box.purple { background: #ba81c5; }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .input-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .cards-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .workspace.active {
+                grid-template-columns: 1fr;
+            }
+
+            .group-header {
+                flex-wrap: wrap;
+            }
+
+            .color-selector {
+                margin-left: 0;
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="site-nav"><a href="/">← Vibing with Code</a></nav>
+    <div class="container">
+        <h1>🔗 Connections Organizer</h1>
+        <p class="subtitle">Organize your puzzle pieces before making your guesses</p>
+
+        <!-- Input Section -->
+        <div class="input-section" id="inputSection">
+            <h3 style="margin-bottom: 15px; color: #ffffff;">Enter Your Words</h3>
+            <p style="margin-bottom: 20px; color: #818384; font-size: 14px;">Type or paste the 16 words</p>
+            <div class="input-grid" id="inputGrid">
+                <!-- 16 input fields will be generated here -->
+            </div>
+            <button class="button" id="startButton">Start Organizing</button>
+        </div>
+
+        <!-- Workspace Section -->
+        <div class="workspace" id="workspace">
+            <div class="categories-section">
+                <div class="group-area">
+                    <div class="group-header">
+                        <span class="group-label">Group 1</span>
+                        <input type="text" class="group-name-input" placeholder="Category name (optional)">
+                        <div class="color-selector">
+                            <button class="color-btn" data-color="yellow" style="background: #f9df6d;" title="Straightforward"></button>
+                            <button class="color-btn" data-color="green" style="background: #a0c35a;" title="Moderate"></button>
+                            <button class="color-btn" data-color="blue" style="background: #b0c4ef;" title="Tricky"></button>
+                            <button class="color-btn" data-color="purple" style="background: #ba81c5;" title="Challenging"></button>
+                        </div>
+                    </div>
+                    <div class="cards-container" data-group="1"></div>
+                </div>
+
+                <div class="group-area">
+                    <div class="group-header">
+                        <span class="group-label">Group 2</span>
+                        <input type="text" class="group-name-input" placeholder="Category name (optional)">
+                        <div class="color-selector">
+                            <button class="color-btn" data-color="yellow" style="background: #f9df6d;" title="Straightforward"></button>
+                            <button class="color-btn" data-color="green" style="background: #a0c35a;" title="Moderate"></button>
+                            <button class="color-btn" data-color="blue" style="background: #b0c4ef;" title="Tricky"></button>
+                            <button class="color-btn" data-color="purple" style="background: #ba81c5;" title="Challenging"></button>
+                        </div>
+                    </div>
+                    <div class="cards-container" data-group="2"></div>
+                </div>
+
+                <div class="group-area">
+                    <div class="group-header">
+                        <span class="group-label">Group 3</span>
+                        <input type="text" class="group-name-input" placeholder="Category name (optional)">
+                        <div class="color-selector">
+                            <button class="color-btn" data-color="yellow" style="background: #f9df6d;" title="Straightforward"></button>
+                            <button class="color-btn" data-color="green" style="background: #a0c35a;" title="Moderate"></button>
+                            <button class="color-btn" data-color="blue" style="background: #b0c4ef;" title="Tricky"></button>
+                            <button class="color-btn" data-color="purple" style="background: #ba81c5;" title="Challenging"></button>
+                        </div>
+                    </div>
+                    <div class="cards-container" data-group="3"></div>
+                </div>
+
+                <div class="group-area">
+                    <div class="group-header">
+                        <span class="group-label">Group 4</span>
+                        <input type="text" class="group-name-input" placeholder="Category name (optional)">
+                        <div class="color-selector">
+                            <button class="color-btn" data-color="yellow" style="background: #f9df6d;" title="Straightforward"></button>
+                            <button class="color-btn" data-color="green" style="background: #a0c35a;" title="Moderate"></button>
+                            <button class="color-btn" data-color="blue" style="background: #b0c4ef;" title="Tricky"></button>
+                            <button class="color-btn" data-color="purple" style="background: #ba81c5;" title="Challenging"></button>
+                        </div>
+                    </div>
+                    <div class="cards-container" data-group="4"></div>
+                </div>
+            </div>
+
+            <div class="available-section">
+                <div class="remaining-cards">
+                    <div class="group-header">
+                        <span class="group-label">Available Cards</span>
+                    </div>
+                    <div class="cards-container" id="availableCards"></div>
+                </div>
+
+                <div class="difficulty-colors">
+                    <div class="difficulty-label">
+                        <div class="color-box yellow"></div>
+                        <span>Straightforward</span>
+                    </div>
+                    <div class="difficulty-label">
+                        <div class="color-box green"></div>
+                        <span>Moderate</span>
+                    </div>
+                    <div class="difficulty-label">
+                        <div class="color-box blue"></div>
+                        <span>Tricky</span>
+                    </div>
+                    <div class="difficulty-label">
+                        <div class="color-box purple"></div>
+                        <span>Challenging</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="button button-secondary" id="resetButton">Reset All</button>
+                    <button class="button button-secondary" id="newPuzzleButton">New Puzzle</button>
+                    <button class="button button-success" id="shuffleButton">Shuffle Remaining</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate 16 input fields
+        const inputGrid = document.getElementById('inputGrid');
+        for (let i = 0; i < 16; i++) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'word-input';
+            input.placeholder = `Word ${i + 1}`;
+            input.maxLength = 20;
+            input.dataset.index = i;
+            
+            // Auto-advance to next input on Enter
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextIndex = i + 1;
+                    if (nextIndex < 16) {
+                        const nextInput = document.querySelector(`.word-input[data-index="${nextIndex}"]`);
+                        nextInput.focus();
+                    } else {
+                        startButton.click();
+                    }
+                }
+            });
+            
+            inputGrid.appendChild(input);
+        }
+
+        const startButton = document.getElementById('startButton');
+        const inputSection = document.getElementById('inputSection');
+        const workspace = document.getElementById('workspace');
+        const availableCards = document.getElementById('availableCards');
+
+        let draggedCard = null;
+
+        // Color selection for groups
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const groupArea = this.closest('.group-area');
+                const container = groupArea.querySelector('.cards-container');
+                const colorButtons = groupArea.querySelectorAll('.color-btn');
+                
+                // Remove selected class from all buttons in this group
+                colorButtons.forEach(b => b.classList.remove('selected'));
+                
+                // Add selected class to clicked button
+                this.classList.add('selected');
+                
+                // Remove all color classes from container
+                container.classList.remove('color-yellow', 'color-green', 'color-blue', 'color-purple');
+                
+                // Add the selected color class
+                const color = this.dataset.color;
+                container.classList.add(`color-${color}`);
+            });
+        });
+
+        // Start organizing
+        startButton.addEventListener('click', () => {
+            const inputs = document.querySelectorAll('.word-input');
+            const words = Array.from(inputs)
+                .map(input => input.value.trim().toUpperCase())
+                .filter(word => word !== '');
+
+            if (words.length !== 16) {
+                alert('Please enter all 16 words!');
+                return;
+            }
+
+            // Check for duplicates
+            const uniqueWords = new Set(words);
+            if (uniqueWords.size !== 16) {
+                alert('Please ensure all words are unique!');
+                return;
+            }
+
+            // Create cards
+            availableCards.innerHTML = '';
+            words.forEach((word, index) => {
+                const card = createCard(word, index);
+                availableCards.appendChild(card);
+            });
+
+            // Switch to workspace
+            inputSection.style.display = 'none';
+            workspace.classList.add('active');
+        });
+
+        // Create a draggable card
+        function createCard(word, index) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.textContent = word;
+            card.draggable = true;
+            card.dataset.word = word;
+            card.dataset.index = index;
+
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+
+            return card;
+        }
+
+        // Drag handlers
+        function handleDragStart(e) {
+            draggedCard = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+        }
+
+        // Set up drop zones
+        const allContainers = document.querySelectorAll('.cards-container');
+        allContainers.forEach(container => {
+            container.addEventListener('dragover', handleDragOver);
+            container.addEventListener('drop', handleDrop);
+            container.addEventListener('dragleave', handleDragLeave);
+        });
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDragLeave(e) {
+            if (e.target === this) {
+                this.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            if (draggedCard) {
+                this.appendChild(draggedCard);
+            }
+        }
+
+        // Reset all cards to available
+        document.getElementById('resetButton').addEventListener('click', () => {
+            const allCards = document.querySelectorAll('.card');
+            allCards.forEach(card => {
+                availableCards.appendChild(card);
+            });
+
+            // Clear category names
+            document.querySelectorAll('.group-name-input').forEach(input => {
+                input.value = '';
+            });
+        });
+
+        // Start new puzzle
+        document.getElementById('newPuzzleButton').addEventListener('click', () => {
+            if (confirm('Start a new puzzle? This will clear all current words.')) {
+                // Clear all inputs
+                document.querySelectorAll('.word-input').forEach(input => {
+                    input.value = '';
+                });
+
+                // Clear category names
+                document.querySelectorAll('.group-name-input').forEach(input => {
+                    input.value = '';
+                });
+
+                // Switch back to input section
+                workspace.classList.remove('active');
+                inputSection.style.display = 'block';
+                
+                // Focus first input
+                document.querySelector('.word-input[data-index="0"]').focus();
+            }
+        });
+
+        // Shuffle remaining cards
+        document.getElementById('shuffleButton').addEventListener('click', () => {
+            const cards = Array.from(availableCards.children);
+            
+            // Fisher-Yates shuffle
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+
+            // Re-append in shuffled order
+            cards.forEach(card => availableCards.appendChild(card));
+        });
+        
+        // Focus first input on load
+        document.querySelector('.word-input[data-index="0"]').focus();
+    </script>
+</body>
+</html>

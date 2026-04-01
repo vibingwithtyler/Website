@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tyler's Projects | Vibing with Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d30 100%);
+            color: #d4d4d4;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            background: linear-gradient(135deg, #4ec9b0 0%, #0e639c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .tagline {
+            font-size: 1.3rem;
+            color: #858585;
+            font-weight: 300;
+        }
+        
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .project-card {
+            background: #252526;
+            border-radius: 12px;
+            padding: 30px;
+            border: 2px solid #3e3e42;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #4ec9b0, #0e639c);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .project-card:hover {
+            border-color: #4ec9b0;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(78, 201, 176, 0.2);
+        }
+        
+        .project-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .project-card.featured {
+            border: 2px solid #4ec9b0;
+            background: linear-gradient(135deg, #252526 0%, #2d3436 100%);
+        }
+        
+        .project-card.featured::before {
+            transform: scaleX(1);
+            background: linear-gradient(90deg, #4ec9b0, #27ae60);
+        }
+        
+        .featured-badge {
+            display: inline-block;
+            background: #4ec9b0;
+            color: #1e1e1e;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .project-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .project-title {
+            font-size: 1.8rem;
+            color: #4ec9b0;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .project-description {
+            color: #858585;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .project-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .tag {
+            background: #3e3e42;
+            color: #d4d4d4;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .project-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        
+        .btn-primary {
+            background: #0e639c;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1177bb;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #4ec9b0;
+            border: 1px solid #4ec9b0;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(78, 201, 176, 0.1);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #858585;
+            border-top: 1px solid #3e3e42;
+            margin-top: 60px;
+        }
+        
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .social-links a {
+            color: #858585;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            color: #4ec9b0;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .tagline {
+                font-size: 1.1rem;
+            }
+            
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .coming-soon {
+            opacity: 0.6;
+        }
+        
+        .coming-soon .project-title::after {
+            content: ' (Coming Soon)';
+            font-size: 0.8rem;
+            color: #858585;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Vibing with Code</h1>
+            <p class="tagline">Building cool stuff, one project at a time</p>
+        </header>
+        
+        <div class="projects-grid">
+            <!-- Featured Project: Clue Tracker -->
+            <div class="project-card featured">
+                <span class="featured-badge">⭐ Featured</span>
+                <div class="project-icon">🎯</div>
+                <h2 class="project-title">Clue Tracker Suite</h2>
+                <p class="project-description">
+                    A comprehensive deduction engine for the board game Clue. Features intelligent guess suggestions, 
+                    bluff detection, opponent tracking, and a full clause-based logic system that guarantees optimal play.
+                </p>
+                <div class="project-tags">
+                    <span class="tag">JavaScript</span>
+                    <span class="tag">Logic Engine</span>
+                    <span class="tag">Data Viz</span>
+                    <span class="tag">Game Theory</span>
+                </div>
+                <div class="project-links">
+                    <a href="/clue-tracker/clue_tracker_v3.html" class="btn btn-primary">Launch Tracker</a>
+                </div>
+            </div>
+            
+            <!-- WordleBot 2.0 -->
+            <div class="project-card">
+                <div class="project-icon">📝</div>
+                <h2 class="project-title">WordleBot 2.0</h2>
+                <p class="project-description">
+                    Advanced Wordle solver assistant with intelligent word filtering and scoring algorithms. 
+                    Analyzes letter constraints, positions, and frequency patterns to suggest optimal guesses 
+                    and maximize your chances of solving in fewer attempts.
+                </p>
+                <div class="project-tags">
+                    <span class="tag">JavaScript</span>
+                    <span class="tag">Algorithm Design</span>
+                    <span class="tag">Word Analysis</span>
+                    <span class="tag">Game Solver</span>
+                </div>
+                <div class="project-links">
+                    <a href="/wordlebot/index.html" class="btn btn-primary">Launch WordleBot</a>
+                </div>
+            </div>
+            
+            <!-- Connections Organizer -->
+            <div class="project-card">
+                <div class="project-icon">🔗</div>
+                <h2 class="project-title">Connections Organizer</h2>
+                <p class="project-description">
+                    Interactive puzzle solver for NYT Connections game. Features drag-and-drop word organization, 
+                    color-coded categories, and an intuitive workspace to help you visualize patterns and 
+                    group related words into themed categories.
+                </p>
+                <div class="project-tags">
+                    <span class="tag">JavaScript</span>
+                    <span class="tag">Drag & Drop</span>
+                    <span class="tag">Puzzle Helper</span>
+                    <span class="tag">UI/UX</span>
+                </div>
+                <div class="project-links">
+                    <a href="/connections_organizer/connectionsorganizer.html" class="btn btn-primary">Launch Organizer</a>
+                </div>
+            </div>
+
+            <!-- Spelling Bee Guide -->
+            <div class="project-card">
+                <div class="project-icon">🐝</div>
+                <h2 class="project-title">Spelling Bee Tracker</h2>
+                <p class="project-description">
+                    A companion tool for the NYT Spelling Bee puzzle. Paste in the hint grid and track your
+                    progress as you find words — see which lengths and starting letters you're missing to
+                    help you reach Genius and Queen Bee.
+                </p>
+                <div class="project-tags">
+                    <span class="tag">React</span>
+                    <span class="tag">Puzzle Helper</span>
+                    <span class="tag">Word Analysis</span>
+                    <span class="tag">Progress Tracker</span>
+                </div>
+                <div class="project-links">
+                    <a href="/spelling-bee-guide/index.html" class="btn btn-primary">Launch Tracker</a>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>&copy; 2026 Tyler | Vibing with Code</p>
+            <div class="social-links">
+                <a href="https://github.com/vibingwithtyler" target="_blank">GitHub</a>
+                <!-- Add more social links as needed -->
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

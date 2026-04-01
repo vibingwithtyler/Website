@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🐝 Spelling Bee Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .site-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 10px 20px; background: rgba(26, 26, 26, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #333; }
+    .site-nav a { color: #4ec9b0; text-decoration: none; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 0.85rem; font-weight: 500; transition: opacity 0.2s; }
+    .site-nav a:hover { opacity: 0.7; }
+    body {
+      background: #1a1a1a;
+      color: #f5f0e8;
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+    }
+    .app { max-width: 960px; margin: 0 auto; padding: 62px 20px 80px; }
+    .header { text-align: center; margin-bottom: 40px; border-bottom: 1px solid #333; padding-bottom: 28px; }
+    .header h1 { font-family: 'Playfair Display', serif; font-size: 2.8rem; font-weight: 900; color: #F7DA21; letter-spacing: -0.02em; line-height: 1; }
+    .header p { color: #888; font-size: 0.85rem; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.05em; }
+    .bee-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
+    .section { background: #2d2d2d; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #3a3a3a; }
+    .section-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: #e8c84a; margin-bottom: 16px; }
+    textarea {
+      width: 100%; background: #1a1a1a; border: 1px solid #444; border-radius: 8px;
+      color: #f5f0e8; font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
+      padding: 12px; resize: vertical; min-height: 80px; outline: none; transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: #F7DA21; }
+    .parse-btn {
+      margin-top: 16px; background: #F7DA21; color: #1a1a1a; border: none; border-radius: 8px;
+      padding: 12px 28px; font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.05em; transition: opacity 0.2s, transform 0.1s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .parse-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .parse-btn:active { transform: translateY(0); }
+    .parse-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .spinner { width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #1a1a1a; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .grid-container { overflow-x: auto; margin-top: 8px; }
+    table { border-collapse: collapse; width: 100%; font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; }
+    th { background: #222; color: #e8c84a; padding: 8px 12px; text-align: center; font-weight: 500; font-size: 0.75rem; letter-spacing: 0.08em; border-bottom: 2px solid #333; }
+    th.row-header { text-align: left; }
+    td { padding: 7px 12px; text-align: center; border-bottom: 1px solid #333; transition: background 0.15s; }
+    td.row-letter { font-weight: 500; color: #F7DA21; text-align: left; font-size: 1rem; }
+    td.cell-done { color: #444; text-decoration: line-through; }
+    td.cell-remaining { color: #F7DA21; font-weight: 500; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .combos-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .combo-chip { background: #1a1a1a; border: 1px solid #3a3a3a; border-radius: 6px; padding: 6px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; display: flex; align-items: center; gap: 6px; transition: border-color 0.2s; }
+    .combo-chip.done { opacity: 0.3; border-color: #2a2a2a; }
+    .combo-label { color: #e8c84a; font-weight: 500; font-size: 0.75rem; letter-spacing: 0.05em; }
+    .combo-count { color: #F7DA21; font-size: 0.9rem; }
+    .combo-count.zero { color: #555; }
+    .word-entry-row { display: flex; gap: 10px; align-items: stretch; }
+    .word-input { flex: 1; background: #1a1a1a; border: 1px solid #444; border-radius: 8px; color: #f5f0e8; font-family: 'IBM Plex Mono', monospace; font-size: 1.1rem; padding: 12px 16px; letter-spacing: 0.1em; text-transform: uppercase; outline: none; transition: border-color 0.2s; }
+    .word-input:focus { border-color: #F7DA21; }
+    .word-input::placeholder { color: #444; text-transform: none; letter-spacing: normal; font-size: 0.9rem; }
+    .submit-btn { background: #F7DA21; color: #1a1a1a; border: none; border-radius: 8px; padding: 12px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
+    .submit-btn:hover { opacity: 0.9; }
+    .found-words { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .found-word { background: rgba(247,218,33,0.12); border: 1px solid rgba(247,218,33,0.25); border-radius: 20px; padding: 4px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: #e8c84a; display: flex; align-items: center; gap: 6px; }
+    .found-word button { background: none; border: none; color: #666; cursor: pointer; font-size: 0.9rem; padding: 0; line-height: 1; }
+    .found-word button:hover { color: #ccc; }
+    .error-msg { color: #e05a5a; font-size: 0.8rem; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; }
+    .status-bar { background: #111; border-radius: 8px; padding: 12px 16px; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: #555; margin-top: 12px; border-left: 3px solid #333; }
+    .status-bar.success { border-left-color: #F7DA21; color: #e8c84a; }
+    .status-bar.error { border-left-color: #e05a5a; color: #e05a5a; }
+    .progress-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .progress-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: #888; letter-spacing: 0.05em; }
+    .progress-bar { height: 4px; background: #333; border-radius: 2px; overflow: hidden; margin-bottom: 20px; }
+    .progress-fill { height: 100%; background: #F7DA21; border-radius: 2px; transition: width 0.4s ease; }
+    .reset-btn { background: none; border: 1px solid #444; border-radius: 6px; color: #666; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; padding: 4px 10px; transition: all 0.2s; }
+    .reset-btn:hover { border-color: #e05a5a; color: #e05a5a; }
+    .hint-text { font-size: 0.8rem; color: #555; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; }
+    .tab-btn { background: none; border: none; cursor: pointer; padding: 8px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; letter-spacing: 0.08em; transition: color 0.2s; margin-bottom: -1px; }
+  </style>
+</head>
+<body>
+  <nav class="site-nav"><a href="/">← Vibing with Code</a></nav>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // ─── Manual text parser ───────────────────────────────────────────────────────
+    function parseManualText(text) {
+      const lines = text.trim().split("\n").map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) throw new Error("Not enough lines");
+
+      let headerIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        const nums = lines[i].match(/\d+/g);
+        if (nums && nums.length >= 3) { headerIdx = i; break; }
+      }
+      if (headerIdx === -1) throw new Error("Could not find header row");
+
+      const lengths = lines[headerIdx].match(/\d+/g).map(Number).filter(n => n >= 4 && n <= 15);
+      const grid = {};
+      const letters = [];
+
+      for (let i = headerIdx + 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.startsWith("Σ") || line.toLowerCase().startsWith("sigma") || line.startsWith("∑")) continue;
+        const letterMatch = line.match(/^([A-Za-z])[\s:]+/);
+        if (!letterMatch) continue;
+        const letter = letterMatch[1].toUpperCase();
+
+        const vals = line.replace(/^[A-Za-z][\s:]+/, "").match(/[\d-]+/g);
+        if (!vals) continue;
+
+        const row = {};
+        lengths.forEach((len, idx) => {
+          const v = vals[idx];
+          if (v && v !== "-") {
+            const n = parseInt(v, 10);
+            if (n > 0) row[String(len)] = n;
+          }
+        });
+
+        if (Object.keys(row).length > 0) {
+          grid[letter] = row;
+          letters.push(letter);
+        }
+      }
+
+      letters.sort();
+      return { grid, lengths, letters, twoLetters: {} };
+    }
+
+    function parseTwoLetterText(text) {
+      if (!text.trim()) return {};
+      const twoLetters = {};
+      const matches = text.matchAll(/([A-Za-z]{2})[-:\s]+(\d+)/g);
+      for (const m of matches) {
+        twoLetters[m[1].toUpperCase()] = parseInt(m[2], 10);
+      }
+      return twoLetters;
+    }
+
+    // ─── Main App ─────────────────────────────────────────────────────────────────
+    function SpellingBeeApp() {
+      const [parseError, setParseError] = useState(null);
+      const [manualGridText, setManualGridText] = useState("");
+      const [manualTwoLetterText, setManualTwoLetterText] = useState("");
+
+      const [originalGrid, setOriginalGrid] = useState(null);
+      const [remainingGrid, setRemainingGrid] = useState(null);
+      const [originalTwoLetters, setOriginalTwoLetters] = useState(null);
+      const [remainingTwoLetters, setRemainingTwoLetters] = useState(null);
+      const [lengths, setLengths] = useState([]);
+      const [letters, setLetters] = useState([]);
+
+      const [wordInput, setWordInput] = useState("");
+      const [foundWords, setFoundWords] = useState([]);
+      const [wordError, setWordError] = useState(null);
+      const [lastStatus, setLastStatus] = useState(null);
+
+      const applyResult = (result, tlText = "") => {
+        let tl = result.twoLetters || {};
+        if (Object.keys(tl).length === 0 && tlText.trim()) {
+          tl = parseTwoLetterText(tlText);
+        }
+        setOriginalGrid(result.grid);
+        setRemainingGrid(JSON.parse(JSON.stringify(result.grid)));
+        setOriginalTwoLetters(tl);
+        setRemainingTwoLetters(JSON.parse(JSON.stringify(tl)));
+        setLengths(result.lengths);
+        setLetters(result.letters);
+        setFoundWords([]);
+        setLastStatus({ type: "success", msg: `Loaded! ${result.letters?.length} starting letters, ${Object.keys(tl).length} two-letter combos.` });
+      };
+
+      const handleManualParse = () => {
+        setParseError(null);
+        try {
+          const result = parseManualText(manualGridText);
+          applyResult(result, manualTwoLetterText);
+        } catch (err) {
+          setParseError(`Could not parse: ${err.message}`);
+        }
+      };
+
+      const submitWord = () => {
+        const word = wordInput.trim().toUpperCase();
+        setWordError(null);
+        if (!word || word.length < 4) { setWordError("Words must be at least 4 letters."); return; }
+        if (!remainingGrid) { setWordError("Load the grid first."); return; }
+        if (foundWords.includes(word)) { setWordError("Already added."); return; }
+
+        const letter = word[0];
+        const len = String(word.length);
+        const twoLet = word.slice(0, 2);
+
+        const newGrid = JSON.parse(JSON.stringify(remainingGrid));
+        const newTL = JSON.parse(JSON.stringify(remainingTwoLetters));
+        const msgs = [];
+
+        if (newGrid[letter] && newGrid[letter][len] !== undefined) {
+          newGrid[letter][len] = Math.max(0, newGrid[letter][len] - 1);
+          msgs.push(`${letter}/${len}-letter`);
+        }
+        if (newTL[twoLet] !== undefined) {
+          newTL[twoLet] = Math.max(0, newTL[twoLet] - 1);
+          msgs.push(`"${twoLet}" combo`);
+        }
+
+        setRemainingGrid(newGrid);
+        setRemainingTwoLetters(newTL);
+        setFoundWords(prev => [...prev, word]);
+        setWordInput("");
+        setLastStatus({ type: "success", msg: `✓ ${word}${msgs.length ? ` — updated ${msgs.join(", ")}` : ""}` });
+      };
+
+      const removeWord = (word) => {
+        const letter = word[0];
+        const len = String(word.length);
+        const twoLet = word.slice(0, 2);
+
+        const newGrid = JSON.parse(JSON.stringify(remainingGrid));
+        const newTL = JSON.parse(JSON.stringify(remainingTwoLetters));
+
+        if (newGrid[letter] && newGrid[letter][len] !== undefined) {
+          newGrid[letter][len] = Math.min(originalGrid[letter]?.[len] || 0, newGrid[letter][len] + 1);
+        }
+        if (newTL[twoLet] !== undefined) {
+          newTL[twoLet] = Math.min(originalTwoLetters[twoLet] || 0, newTL[twoLet] + 1);
+        }
+
+        setRemainingGrid(newGrid);
+        setRemainingTwoLetters(newTL);
+        setFoundWords(prev => prev.filter(w => w !== word));
+        setLastStatus({ type: "success", msg: `Removed ${word}` });
+      };
+
+      const resetAll = () => {
+        setRemainingGrid(JSON.parse(JSON.stringify(originalGrid)));
+        setRemainingTwoLetters(JSON.parse(JSON.stringify(originalTwoLetters)));
+        setFoundWords([]);
+        setLastStatus(null);
+      };
+
+      const totalOriginal = originalGrid
+        ? Object.values(originalGrid).reduce((s, lens) => s + Object.values(lens).reduce((a, b) => a + b, 0), 0) : 0;
+      const totalRemaining = remainingGrid
+        ? Object.values(remainingGrid).reduce((s, lens) => s + Object.values(lens).reduce((a, b) => a + b, 0), 0) : 0;
+      const progressPct = totalOriginal > 0 ? Math.round(((totalOriginal - totalRemaining) / totalOriginal) * 100) : 0;
+
+      return (
+        <div className="app">
+          <div className="header">
+            <span className="bee-icon">🐝</span>
+            <h1>Spelling Bee Tracker</h1>
+            <p>HINT GRID TRACKER — NYT SPELLING BEE</p>
+          </div>
+
+          {/* Input section */}
+          <div className="section">
+            <div className="section-title">Paste Grid Text</div>
+            <textarea
+              value={manualGridText}
+              onChange={e => setManualGridText(e.target.value)}
+              style={{ minHeight: 180 }}
+              placeholder={"Paste the hint grid, e.g.:\n     4  5  6  7  8  9\nA:   2  2  -  -  -  -\nC:   3  2  1  -  1  2\nM:  10  9  8  2  3  -\nN:   1  -  1  -  -  -\nO:   -  -  -  1  -  -\nR:   2  -  1  -  -  -\nT:   1  -  3  1  -  -"}
+            />
+            <div className="section-title" style={{ marginTop: 16 }}>Two-Letter List (optional)</div>
+            <textarea
+              value={manualTwoLetterText}
+              onChange={e => setManualTwoLetterText(e.target.value)}
+              style={{ minHeight: 60 }}
+              placeholder={"am-1 ar-2 at-1\nca-3 co-5 cr-1\nma-17 mo-15\n..."}
+            />
+            <div className="hint-text">Copy from the NYT Spelling Bee Hints page. Rows start with a letter followed by counts.</div>
+            <div style={{ display: "flex", gap: 12, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
+              <button className="parse-btn" disabled={!manualGridText.trim()} onClick={handleManualParse}>
+                ✓ Load Grid
+              </button>
+              {parseError && <span style={{ color: "#e05a5a", fontSize: "0.8rem", fontFamily: "IBM Plex Mono", flex: "1 1 100%", marginTop: 4 }}>{parseError}</span>}
+            </div>
+          </div>
+
+          {/* Grid display */}
+          {remainingGrid && letters.length > 0 && (
+            <>
+              <div className="section">
+                <div className="progress-row">
+                  <div className="section-title" style={{ margin: 0 }}>Remaining Words</div>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <span className="progress-label">{totalOriginal - totalRemaining}/{totalOriginal} found</span>
+                    <button className="reset-btn" onClick={resetAll}>reset</button>
+                  </div>
+                </div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+                </div>
+                <div className="grid-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th className="row-header">↓ Start / Len →</th>
+                        {lengths.map(l => <th key={l}>{l}</th>)}
+                        <th>Σ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {letters.map(letter => {
+                        const rowTotal = lengths.reduce((s, l) => s + (remainingGrid[letter]?.[String(l)] || 0), 0);
+                        return (
+                          <tr key={letter}>
+                            <td className="row-letter">{letter}</td>
+                            {lengths.map(l => {
+                              const orig = originalGrid[letter]?.[String(l)] || 0;
+                              const rem = remainingGrid[letter]?.[String(l)] || 0;
+                              if (orig === 0) return <td key={l} style={{ color: "#333" }}>—</td>;
+                              return (
+                                <td key={l} className={rem === 0 ? "cell-done" : "cell-remaining"}>
+                                  {rem}
+                                  {orig !== rem && <span style={{ color: "#555", fontSize: "0.7rem" }}>/{orig}</span>}
+                                </td>
+                              );
+                            })}
+                            <td className={rowTotal === 0 ? "cell-done" : "cell-remaining"} style={{ borderLeft: "1px solid #444" }}>
+                              {rowTotal}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {remainingTwoLetters && Object.keys(remainingTwoLetters).length > 0 && (
+                <div className="section">
+                  <div className="section-title">Two-Letter Combos</div>
+                  <div className="combos-grid">
+                    {Object.entries(remainingTwoLetters)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([combo, count]) => (
+                        <div key={combo} className={`combo-chip ${count === 0 ? "done" : ""}`}>
+                          <span className="combo-label">{combo}</span>
+                          <span className={`combo-count ${count === 0 ? "zero" : ""}`}>{count}</span>
+                          {originalTwoLetters[combo] !== count && (
+                            <span style={{ color: "#444", fontSize: "0.7rem", fontFamily: "IBM Plex Mono" }}>/{originalTwoLetters[combo]}</span>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="section">
+                <div className="section-title">Log a Found Word</div>
+                <div className="word-entry-row">
+                  <input
+                    className="word-input"
+                    type="text"
+                    value={wordInput}
+                    onChange={e => setWordInput(e.target.value.toUpperCase())}
+                    onKeyDown={e => e.key === "Enter" && submitWord()}
+                    placeholder="Type a word and press Enter"
+                    maxLength={20}
+                  />
+                  <button className="submit-btn" onClick={submitWord}>Add Word</button>
+                </div>
+                {wordError && <div className="error-msg">⚠ {wordError}</div>}
+                {lastStatus && <div className={`status-bar ${lastStatus.type}`}>{lastStatus.msg}</div>}
+                {foundWords.length > 0 && (
+                  <div className="found-words">
+                    {foundWords.map(w => (
+                      <div key={w} className="found-word">
+                        {w}
+                        <button onClick={() => removeWord(w)} title="Undo">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<SpellingBeeApp />);
+  </script>
+</body>
+</html>

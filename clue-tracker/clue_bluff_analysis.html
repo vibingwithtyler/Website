@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluff Analysis - Clue Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .site-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 10px 20px; background: rgba(30, 30, 30, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #3e3e42; }
+        .site-nav a { color: #4ec9b0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: opacity 0.2s; }
+        .site-nav a:hover { opacity: 0.7; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 50px 20px 20px;
+        }
+        
+        header {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        h1 { color: #4ec9b0; margin-bottom: 10px; }
+        
+        .nav-links {
+            margin-top: 10px;
+        }
+        
+        .nav-links a {
+            color: #4ec9b0;
+            margin-right: 15px;
+            text-decoration: none;
+        }
+        
+        .upload-section {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #4ec9b0;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .upload-area:hover {
+            background: #2d2d30;
+        }
+        
+        .upload-area.dragover {
+            background: #2d2d30;
+            border-color: #27ae60;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .file-list {
+            margin-top: 20px;
+        }
+        
+        .file-item {
+            background: #1e1e1e;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-item .name {
+            color: #4ec9b0;
+        }
+        
+        .file-item .remove {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .analyze-button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .analyze-button:hover {
+            background: #1177bb;
+        }
+        
+        .analyze-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .results-section {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #4ec9b0;
+        }
+        
+        .stat-card.bluff {
+            border-left-color: #e74c3c;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4ec9b0;
+        }
+        
+        .stat-card.bluff .stat-value {
+            color: #e74c3c;
+        }
+        
+        .stat-label {
+            color: #858585;
+            font-size: 0.9em;
+        }
+        
+        .player-results {
+            margin: 20px 0;
+        }
+        
+        .player-card {
+            background: #1e1e1e;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+        }
+        
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3e3e42;
+        }
+        
+        .player-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #4ec9b0;
+        }
+        
+        .bluff-rate {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .bluff-rate.high {
+            color: #e74c3c;
+        }
+        
+        .bluff-rate.medium {
+            color: #f39c12;
+        }
+        
+        .bluff-rate.low {
+            color: #27ae60;
+        }
+        
+        .bluff-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .bluff-item {
+            background: #252526;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 3px solid #e74c3c;
+        }
+        
+        .bluff-details {
+            color: #858585;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .export-button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        
+        .export-button:hover {
+            background: #2ecc71;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #3e3e42;
+        }
+        
+        th {
+            background: #0e639c;
+            color: white;
+        }
+        
+        tr:hover {
+            background: #2d2d30;
+        }
+    </style>
+</head>
+<body>
+    <nav class="site-nav"><a href="/">← Vibing with Code</a></nav>
+    <header>
+        <h1>🎭 Bluff Analysis Tool</h1>
+        <p>Analyze player bluffing patterns across multiple games</p>
+        <div class="nav-links">
+            <a href="clue_tracker_v3.html">← Back to Tracker</a>
+            <a href="clue_player_intelligence.html">Player Intel</a>
+            <a href="clue_diagnostic.html">Diagnostic</a>
+        </div>
+    </header>
+    
+    <div class="upload-section">
+        <h2>Upload Game Logs</h2>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <p style="font-size: 1.2em; color: #4ec9b0;">📁 Click to select files or drag & drop</p>
+            <p style="color: #858585; margin-top: 10px;">Upload diagnostic JSON files (multiple files supported)</p>
+        </div>
+        <input type="file" id="fileInput" accept=".json" multiple>
+        
+        <div class="file-list" id="fileList"></div>
+        
+        <button class="analyze-button" id="analyzeButton" onclick="analyzeBluffs()" disabled>Analyze Bluffs</button>
+    </div>
+    
+    <div class="results-section" id="resultsSection" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Analysis Results</h2>
+            <button class="export-button" onclick="exportToCSV()">Export to CSV</button>
+        </div>
+        
+        <div class="summary-stats" id="summaryStats"></div>
+        
+        <h3 style="margin-top: 30px; color: #4ec9b0;">Player-by-Player Analysis</h3>
+        <div class="player-results" id="playerResults"></div>
+        
+        <h3 style="margin-top: 30px; color: #4ec9b0;">Detailed Bluff Log</h3>
+        <div id="detailedTable"></div>
+    </div>
+    
+    <script>
+        let uploadedFiles = [];
+        let analysisResults = null;
+        
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(files) {
+            for (let file of files) {
+                if (file.name.endsWith('.json')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            uploadedFiles.push({
+                                name: file.name,
+                                data: data
+                            });
+                            renderFileList();
+                            document.getElementById('analyzeButton').disabled = false;
+                        } catch (err) {
+                            alert(`Error parsing ${file.name}: ${err.message}`);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            }
+        }
+        
+        function renderFileList() {
+            const html = uploadedFiles.map((file, idx) => `
+                <div class="file-item">
+                    <span class="name">${file.name}</span>
+                    <button class="remove" onclick="removeFile(${idx})">Remove</button>
+                </div>
+            `).join('');
+            
+            document.getElementById('fileList').innerHTML = html || '<p style="color: #858585;">No files uploaded yet</p>';
+        }
+        
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            renderFileList();
+            if (uploadedFiles.length === 0) {
+                document.getElementById('analyzeButton').disabled = true;
+            }
+        }
+        
+        function analyzeBluffs() {
+            const allBluffs = [];
+            const playerStats = {};
+            
+            // Process each game log
+            uploadedFiles.forEach((file, gameIdx) => {
+                const gameState = file.data.gameState;
+                if (!gameState || !gameState.guesses) return;
+                
+                const knowledge = gameState.knowledge;
+                const guesses = gameState.guesses;
+                
+                // Analyze each guess
+                guesses.forEach((guess, guessIdx) => {
+                    const guesser = guess.guesser;
+                    const guessedCards = [guess.suspect, guess.weapon, guess.location];
+                    
+                    // Initialize player stats if needed
+                    if (!playerStats[guesser]) {
+                        playerStats[guesser] = {
+                            totalGuesses: 0,
+                            bluffs: 0,
+                            bluffDetails: []
+                        };
+                    }
+                    
+                    playerStats[guesser].totalGuesses++;
+                    
+                    // Get player's confirmed cards
+                    let playerHand = [];
+                    if (knowledge[guesser]) {
+                        Object.entries(knowledge[guesser]).forEach(([card, state]) => {
+                            if (state === true) {
+                                playerHand.push(card);
+                            }
+                        });
+                    }
+                    
+                    // Check if guesser has any of the cards they guessed
+                    let bluffedCards = [];
+                    if (knowledge[guesser]) {
+                        guessedCards.forEach(card => {
+                            if (knowledge[guesser][card] === true) {
+                                bluffedCards.push(card);
+                            }
+                        });
+                    }
+                    
+                    if (bluffedCards.length > 0) {
+                        // BLUFF DETECTED!
+                        playerStats[guesser].bluffs++;
+                        
+                        const bluff = {
+                            game: file.name,
+                            gameIndex: gameIdx + 1,
+                            guessNumber: guessIdx + 1,
+                            player: guesser,
+                            bluffedCards: bluffedCards,
+                            playerHand: playerHand,
+                            fullGuess: `${guess.suspect} + ${guess.weapon} + ${guess.location}`,
+                            suspect: guess.suspect,
+                            weapon: guess.weapon,
+                            location: guess.location
+                        };
+                        
+                        playerStats[guesser].bluffDetails.push(bluff);
+                        allBluffs.push(bluff);
+                    }
+                });
+            });
+            
+            // Calculate summary statistics
+            const totalGuesses = Object.values(playerStats).reduce((sum, p) => sum + p.totalGuesses, 0);
+            const totalBluffs = Object.values(playerStats).reduce((sum, p) => sum + p.bluffs, 0);
+            const overallBluffRate = totalGuesses > 0 ? (totalBluffs / totalGuesses * 100).toFixed(1) : 0;
+            
+            analysisResults = {
+                playerStats,
+                allBluffs,
+                summary: {
+                    totalGames: uploadedFiles.length,
+                    totalGuesses,
+                    totalBluffs,
+                    overallBluffRate
+                }
+            };
+            
+            renderResults();
+        }
+        
+        function renderResults() {
+            if (!analysisResults) return;
+            
+            const { playerStats, allBluffs, summary } = analysisResults;
+            
+            // Show results section
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            // Render summary stats
+            let summaryHtml = `
+                <div class="stat-card">
+                    <div class="stat-value">${summary.totalGames}</div>
+                    <div class="stat-label">Games Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${summary.totalGuesses}</div>
+                    <div class="stat-label">Total Guesses</div>
+                </div>
+                <div class="stat-card bluff">
+                    <div class="stat-value">${summary.totalBluffs}</div>
+                    <div class="stat-label">Bluffs Detected</div>
+                </div>
+                <div class="stat-card bluff">
+                    <div class="stat-value">${summary.overallBluffRate}%</div>
+                    <div class="stat-label">Overall Bluff Rate</div>
+                </div>
+            `;
+            document.getElementById('summaryStats').innerHTML = summaryHtml;
+            
+            // Render player-by-player results
+            let playerHtml = '';
+            Object.entries(playerStats)
+                .sort((a, b) => (b[1].bluffs / b[1].totalGuesses) - (a[1].bluffs / a[1].totalGuesses))
+                .forEach(([player, stats]) => {
+                    const bluffRate = stats.totalGuesses > 0 ? (stats.bluffs / stats.totalGuesses * 100).toFixed(1) : 0;
+                    const rateClass = bluffRate > 20 ? 'high' : bluffRate > 5 ? 'medium' : 'low';
+                    
+                    playerHtml += `
+                        <div class="player-card">
+                            <div class="player-header">
+                                <span class="player-name">${player}</span>
+                                <span class="bluff-rate ${rateClass}">${bluffRate}% bluff rate</span>
+                            </div>
+                            <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                                <div><strong>Total Guesses:</strong> ${stats.totalGuesses}</div>
+                                <div><strong>Bluffs:</strong> ${stats.bluffs}</div>
+                                <div><strong>Honest Guesses:</strong> ${stats.totalGuesses - stats.bluffs}</div>
+                            </div>
+                    `;
+                    
+                    if (stats.bluffDetails.length > 0) {
+                        playerHtml += '<div class="bluff-list">';
+                        stats.bluffDetails.forEach(bluff => {
+                            playerHtml += `
+                                <div class="bluff-item">
+                                    <div><strong>🎭 Bluffed: ${bluff.bluffedCards.join(', ')}</strong></div>
+                                    <div class="bluff-details">
+                                        Game: ${bluff.game} | Guess #${bluff.guessNumber}<br>
+                                        Guessed: ${bluff.fullGuess}<br>
+                                        <strong>Their Hand:</strong> ${bluff.playerHand.join(', ') || 'Unknown'}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        playerHtml += '</div>';
+                    }
+                    
+                    playerHtml += '</div>';
+                });
+            
+            document.getElementById('playerResults').innerHTML = playerHtml;
+            
+            // Render detailed table
+            let tableHtml = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Game</th>
+                            <th>Guess #</th>
+                            <th>Player</th>
+                            <th>Bluffed Cards</th>
+                            <th>Full Guess</th>
+                            <th>Player's Hand</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            allBluffs.forEach(bluff => {
+                tableHtml += `
+                    <tr>
+                        <td>${bluff.game}</td>
+                        <td>#${bluff.guessNumber}</td>
+                        <td>${bluff.player}</td>
+                        <td style="color: #e74c3c; font-weight: bold;">${bluff.bluffedCards.join(', ')}</td>
+                        <td>${bluff.fullGuess}</td>
+                        <td style="font-size: 0.9em;">${bluff.playerHand.join(', ') || 'Unknown'}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHtml += '</tbody></table>';
+            
+            if (allBluffs.length === 0) {
+                tableHtml = '<p style="color: #858585;">No bluffs detected in the analyzed games!</p>';
+            }
+            
+            document.getElementById('detailedTable').innerHTML = tableHtml;
+        }
+        
+        function exportToCSV() {
+            if (!analysisResults) return;
+            
+            const { playerStats, allBluffs } = analysisResults;
+            
+            let csv = 'Player,Total Guesses,Bluffs,Bluff Rate (%)\n';
+            
+            Object.entries(playerStats).forEach(([player, stats]) => {
+                const bluffRate = stats.totalGuesses > 0 ? (stats.bluffs / stats.totalGuesses * 100).toFixed(1) : 0;
+                csv += `"${player}",${stats.totalGuesses},${stats.bluffs},${bluffRate}\n`;
+            });
+            
+            csv += '\n\nDetailed Bluff Log\n';
+            csv += 'Game,Guess Number,Player,Bluffed Cards,Suspect Guessed,Weapon Guessed,Location Guessed,Player Hand\n';
+            
+            allBluffs.forEach(bluff => {
+                csv += `"${bluff.game}",${bluff.guessNumber},"${bluff.player}","${bluff.bluffedCards.join('; ')}","${bluff.suspect}","${bluff.weapon}","${bluff.location}","${bluff.playerHand.join('; ')}"\n`;
+            });
+            
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bluff_analysis_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

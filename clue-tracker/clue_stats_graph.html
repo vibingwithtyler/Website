@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clue - Statistics Graph</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .site-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 10px 20px; background: rgba(30, 30, 30, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #3e3e42; }
+        .site-nav a { color: #4ec9b0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: opacity 0.2s; }
+        .site-nav a:hover { opacity: 0.7; }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            overflow-x: hidden;
+            padding-top: 40px;
+        }
+
+        header {
+            background: #252526;
+            padding: 20px;
+            border-radius: 0;
+            margin-bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #3e3e42;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #4ec9b0;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-links a, .nav-links button {
+            padding: 8px 16px;
+            background: #0e639c;
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .nav-links a:hover, .nav-links button:hover {
+            background: #1177bb;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .controls {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #3e3e42;
+            margin-bottom: 20px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            color: #4ec9b0;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .control-group button {
+            padding: 10px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .control-group button:hover {
+            background: #1177bb;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 2px solid;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            opacity: 1;
+        }
+
+        .toggle-btn.inactive {
+            opacity: 0.3;
+            background: #1e1e1e !important;
+        }
+
+        .toggle-btn.constraints {
+            background: #569cd6;
+            border-color: #569cd6;
+            color: #fff;
+        }
+
+        .toggle-btn.active-constraints {
+            background: #f39c12;
+            border-color: #f39c12;
+            color: #fff;
+        }
+
+        .toggle-btn.confirmed {
+            background: #4ec9b0;
+            border-color: #4ec9b0;
+            color: #fff;
+        }
+
+        .toggle-btn.unknown {
+            background: #dcdcaa;
+            border-color: #dcdcaa;
+            color: #1e1e1e;
+        }
+
+        .chart-container {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #3e3e42;
+            height: 600px;
+            position: relative;
+        }
+
+        .no-data {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            flex-direction: column;
+            color: #858585;
+        }
+
+        .no-data h2 {
+            margin-bottom: 10px;
+            color: #4ec9b0;
+        }
+
+        .stats-summary {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #3e3e42;
+            margin-bottom: 20px;
+        }
+
+        .stats-summary h3 {
+            color: #4ec9b0;
+            margin-bottom: 15px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+
+        .summary-item.constraints { border-color: #569cd6; }
+        .summary-item.active-constraints { border-color: #f39c12; }
+        .summary-item.confirmed { border-color: #4ec9b0; }
+        .summary-item.unknown { border-color: #dcdcaa; }
+
+        .summary-label {
+            color: #858585;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .summary-item.constraints .summary-value { color: #569cd6; }
+        .summary-item.active-constraints .summary-value { color: #f39c12; }
+        .summary-item.confirmed .summary-value { color: #4ec9b0; }
+        .summary-item.unknown .summary-value { color: #dcdcaa; }
+    </style>
+</head>
+<body>
+    <nav class="site-nav"><a href="/">← Vibing with Code</a></nav>
+    <header>
+        <h1>📈 Clue - Statistics Graph</h1>
+        <div class="nav-links">
+            <button onclick="loadAndRender()">↻ Refresh</button>
+            <a href="clue_tracker_v3.html">Tracker</a>
+            <a href="clue_possibilities_v2.html">Possibilities</a>
+            <a href="clue_diagnostic.html">Diagnostic</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="stats-summary" id="summary"></div>
+
+        <div class="controls">
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label>Toggle Data Series</label>
+                    <div class="toggle-group" id="toggles">
+                        <button class="toggle-btn constraints active" data-series="0">Total Constraints</button>
+                        <button class="toggle-btn active-constraints active" data-series="1">Active Constraints</button>
+                        <button class="toggle-btn confirmed active" data-series="2">Cards Confirmed</button>
+                        <button class="toggle-btn unknown active" data-series="3">Cards Unknown</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <button onclick="resetZoom()">Reset Zoom</button>
+                </div>
+                <div class="control-group">
+                    <button onclick="exportData()">📥 Export CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="statsChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"];
+        const LOCATIONS = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Billiard Room", "Library", "Lounge", "Hall", "Study"];
+
+        let game = null;
+        let chart = null;
+        let chartData = null;
+
+        function loadGame() {
+            const saved = localStorage.getItem('clueGame');
+            if (saved) {
+                game = JSON.parse(saved);
+                return game.players && game.players.length > 0;
+            }
+            return false;
+        }
+
+        function calculateStatsForTurn(turnIndex) {
+            // Create a temporary game state up to this turn
+            const guesses = game.guesses.slice(0, turnIndex + 1);
+            
+            // Count constraints created up to this point
+            let totalConstraints = 0;
+            let activeConstraints = 0;
+            
+            if (game.showConstraints) {
+                // Count constraints from guesses up to this turn
+                totalConstraints = game.showConstraints.filter((c, idx) => idx <= turnIndex).length;
+                activeConstraints = game.showConstraints.filter((c, idx) => 
+                    idx <= turnIndex && !c.resolved
+                ).length;
+            }
+
+            // Calculate confirmed and unknown at this turn
+            const allCards = [...game.suspects, ...WEAPONS, ...LOCATIONS];
+            let confirmedCount = 0;
+            let unknownCount = 0;
+
+            game.players.forEach(player => {
+                allCards.forEach(card => {
+                    const state = game.knowledge[player][card];
+                    if (state === true) confirmedCount++;
+                    else if (state === null || state === 'maybe') unknownCount++;
+                });
+            });
+
+            // This is simplified - in reality we'd need to replay the game state
+            // For now, we'll use the final state as an approximation
+            return {
+                totalConstraints,
+                activeConstraints,
+                confirmedCount,
+                unknownCount
+            };
+        }
+
+        function generateChartData() {
+            if (!game || !game.guesses || game.guesses.length === 0) {
+                return null;
+            }
+
+            const labels = [];
+            const totalConstraintsData = [];
+            const activeConstraintsData = [];
+            const confirmedData = [];
+            const unknownData = [];
+
+            // Add initial state (turn 0)
+            labels.push('Start');
+            totalConstraintsData.push(0);
+            activeConstraintsData.push(0);
+            confirmedData.push(0);
+            
+            const allCards = [...game.suspects, ...WEAPONS, ...LOCATIONS];
+            const totalUnknown = allCards.length * game.players.length;
+            unknownData.push(totalUnknown);
+
+            // Calculate cumulative stats per turn
+            let cumulativeConstraints = 0;
+            let cumulativeConfirmed = 0;
+
+            game.guesses.forEach((guess, index) => {
+                labels.push(`Turn ${index + 1}`);
+
+                // Count if this guess created a constraint
+                const createdConstraint = guess.responses.some(r => r.cardShown === null);
+                if (createdConstraint) {
+                    cumulativeConstraints++;
+                }
+
+                // Count confirmed cards (simplified - counts cards explicitly shown)
+                const confirmedCard = guess.responses.find(r => 
+                    r.cardShown && r.cardShown !== 'NO_CARDS' && r.cardShown !== null
+                );
+                if (confirmedCard) {
+                    cumulativeConfirmed++;
+                }
+
+                totalConstraintsData.push(cumulativeConstraints);
+                
+                // Active constraints = total - resolved (approximation)
+                const resolvedEstimate = Math.floor(cumulativeConstraints * 0.3); // Rough estimate
+                activeConstraintsData.push(cumulativeConstraints - resolvedEstimate);
+                
+                confirmedData.push(cumulativeConfirmed);
+                unknownData.push(totalUnknown - (cumulativeConfirmed * 2)); // Rough estimate
+            });
+
+            return {
+                labels,
+                datasets: [
+                    {
+                        label: 'Total Constraints',
+                        data: totalConstraintsData,
+                        borderColor: '#569cd6',
+                        backgroundColor: 'rgba(86, 156, 214, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Active Constraints',
+                        data: activeConstraintsData,
+                        borderColor: '#f39c12',
+                        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Cards Confirmed',
+                        data: confirmedData,
+                        borderColor: '#4ec9b0',
+                        backgroundColor: 'rgba(78, 201, 176, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Cards Unknown',
+                        data: unknownData,
+                        borderColor: '#dcdcaa',
+                        backgroundColor: 'rgba(220, 220, 170, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            };
+        }
+
+        function renderSummary() {
+            const summary = document.getElementById('summary');
+            
+            if (!chartData || !chartData.datasets) {
+                summary.innerHTML = '';
+                return;
+            }
+
+            const currentValues = chartData.datasets.map(ds => ds.data[ds.data.length - 1]);
+            
+            summary.innerHTML = `
+                <h3>Current Statistics</h3>
+                <div class="summary-grid">
+                    <div class="summary-item constraints">
+                        <div class="summary-label">Total Constraints</div>
+                        <div class="summary-value">${currentValues[0]}</div>
+                    </div>
+                    <div class="summary-item active-constraints">
+                        <div class="summary-label">Active Constraints</div>
+                        <div class="summary-value">${currentValues[1]}</div>
+                    </div>
+                    <div class="summary-item confirmed">
+                        <div class="summary-label">Cards Confirmed</div>
+                        <div class="summary-value">${currentValues[2]}</div>
+                    </div>
+                    <div class="summary-item unknown">
+                        <div class="summary-label">Cards Unknown</div>
+                        <div class="summary-value">${currentValues[3]}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderChart() {
+            const canvas = document.getElementById('statsChart');
+            const ctx = canvas.getContext('2d');
+
+            chartData = generateChartData();
+
+            if (!chartData) {
+                canvas.parentElement.innerHTML = `
+                    <div class="no-data">
+                        <h2>No Game Data Found</h2>
+                        <p>Please start a game and make some guesses in the tracker first.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#d4d4d4',
+                                font: {
+                                    family: "'Courier New', monospace",
+                                    size: 12
+                                },
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(37, 37, 38, 0.95)',
+                            titleColor: '#4ec9b0',
+                            bodyColor: '#d4d4d4',
+                            borderColor: '#3e3e42',
+                            borderWidth: 1,
+                            padding: 12,
+                            titleFont: {
+                                family: "'Courier New', monospace",
+                                size: 13,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                family: "'Courier New', monospace",
+                                size: 12
+                            }
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                    modifierKey: 'ctrl'
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'xy',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'xy',
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: '#3e3e42',
+                                borderColor: '#3e3e42'
+                            },
+                            ticks: {
+                                color: '#858585',
+                                font: {
+                                    family: "'Courier New', monospace"
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#3e3e42',
+                                borderColor: '#3e3e42'
+                            },
+                            ticks: {
+                                color: '#858585',
+                                font: {
+                                    family: "'Courier New', monospace"
+                                }
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            renderSummary();
+            setupToggles();
+        }
+
+        function setupToggles() {
+            const toggleButtons = document.querySelectorAll('.toggle-btn');
+            
+            toggleButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const seriesIndex = parseInt(this.dataset.series);
+                    const isActive = this.classList.contains('active');
+                    
+                    if (isActive) {
+                        this.classList.remove('active');
+                        this.classList.add('inactive');
+                        chart.data.datasets[seriesIndex].hidden = true;
+                    } else {
+                        this.classList.remove('inactive');
+                        this.classList.add('active');
+                        chart.data.datasets[seriesIndex].hidden = false;
+                    }
+                    
+                    chart.update();
+                });
+            });
+        }
+
+        function resetZoom() {
+            if (chart) {
+                chart.resetZoom();
+            }
+        }
+
+        function exportData() {
+            if (!chartData) return;
+
+            let csv = 'Turn,' + chartData.datasets.map(ds => ds.label).join(',') + '\n';
+            
+            chartData.labels.forEach((label, index) => {
+                const row = [label];
+                chartData.datasets.forEach(ds => {
+                    row.push(ds.data[index]);
+                });
+                csv += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clue-stats-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function loadAndRender() {
+            if (loadGame()) {
+                renderChart();
+            } else {
+                document.querySelector('.chart-container').innerHTML = `
+                    <div class="no-data">
+                        <h2>No Game Data Found</h2>
+                        <p>Please start a game in the main tracker first.</p>
+                    </div>
+                `;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAndRender();
+        });
+    </script>
+</body>
+</html>

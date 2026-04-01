@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clue - Diagnostic Log</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .site-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 10px 20px; background: rgba(30, 30, 30, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #3e3e42; }
+        .site-nav a { color: #4ec9b0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: opacity 0.2s; }
+        .site-nav a:hover { opacity: 0.7; }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 50px 20px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #3e3e42;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #4ec9b0;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-links a, .nav-links button {
+            padding: 8px 16px;
+            background: #0e639c;
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        .nav-links a:hover, .nav-links button:hover {
+            background: #1177bb;
+        }
+
+        .section {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #3e3e42;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            color: #4ec9b0;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .log-entry {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #1e1e1e;
+            border-left: 3px solid #007acc;
+            border-radius: 4px;
+        }
+
+        .log-entry.error {
+            border-left-color: #f48771;
+        }
+
+        .log-entry.warning {
+            border-left-color: #dcdcaa;
+        }
+
+        .log-timestamp {
+            color: #858585;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .log-content {
+            color: #d4d4d4;
+        }
+
+        .constraint-item {
+            background: #1e1e1e;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 3px solid #569cd6;
+        }
+
+        .constraint-item.resolved {
+            border-left-color: #4ec9b0;
+            opacity: 0.6;
+        }
+
+        .guess-item {
+            background: #1e1e1e;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 4px;
+            border: 1px solid #3e3e42;
+        }
+
+        .guess-header {
+            color: #dcdcaa;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .player-matrix {
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        .player-matrix table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .player-matrix th, .player-matrix td {
+            padding: 6px;
+            text-align: center;
+            border: 1px solid #3e3e42;
+        }
+
+        .player-matrix th {
+            background: #2d2d30;
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+
+        .state-true { color: #4ec9b0; }
+        .state-false { color: #f48771; }
+        .state-maybe { color: #569cd6; }
+        .state-null { color: #858585; }
+
+        .code-block {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #3e3e42;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .copy-btn {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #1177bb;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background: #1e1e1e;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #3e3e42;
+        }
+
+        .stat-label {
+            color: #858585;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #4ec9b0;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .validation-error {
+            background: #1e1e1e;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 4px;
+            border-left: 4px solid #f48771;
+            color: #f48771;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #858585;
+        }
+    </style>
+</head>
+<body>
+    <nav class="site-nav"><a href="/">← Vibing with Code</a></nav>
+    <div class="container">
+        <header>
+            <h1>🔬 Clue - Diagnostic Log</h1>
+            <div class="nav-links">
+                <button onclick="loadAndRender()">↻ Refresh</button>
+                <button onclick="downloadLog()">📥 Download Log</button>
+                <a href="clue_tracker_v3.html">← Back to Tracker</a>
+            </div>
+        </header>
+
+        <div id="content"></div>
+    </div>
+
+    <script>
+        const WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"];
+        const LOCATIONS = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Billiard Room", "Library", "Lounge", "Hall", "Study"];
+
+        let game = null;
+        let logData = {};
+
+        function loadGame() {
+            const saved = localStorage.getItem('clueGame');
+            if (saved) {
+                game = JSON.parse(saved);
+                return game.players && game.players.length > 0;
+            }
+            return false;
+        }
+
+        function validateGameState() {
+            const errors = [];
+            const warnings = [];
+
+            if (!game) return { errors, warnings };
+
+            // Check for multiple solution cards per category
+            ['suspect', 'weapon', 'location'].forEach(type => {
+                if (game.solutionMustBe[type].length > 1) {
+                    errors.push(`CRITICAL: Multiple ${type}s marked as solution: ${game.solutionMustBe[type].join(', ')}`);
+                }
+            });
+
+            // Check for players with too many confirmed cards
+            const totalCards = game.suspects.length + WEAPONS.length + LOCATIONS.length;
+            const cardsInHands = totalCards - 3;
+            const cardsPerPlayer = Math.floor(cardsInHands / game.players.length);
+
+            game.players.forEach(player => {
+                const allCards = [...game.suspects, ...WEAPONS, ...LOCATIONS];
+                const confirmedCards = allCards.filter(card => game.knowledge[player][card] === true);
+                
+                if (confirmedCards.length > cardsPerPlayer) {
+                    errors.push(`CRITICAL: ${player} has ${confirmedCards.length} confirmed cards but should only have ${cardsPerPlayer}: ${confirmedCards.join(', ')}`);
+                }
+            });
+
+            // Check for cards marked as both in solution and owned by player
+            ['suspect', 'weapon', 'location'].forEach(type => {
+                game.solutionMustBe[type].forEach(card => {
+                    game.players.forEach(player => {
+                        if (game.knowledge[player][card] === true) {
+                            errors.push(`CRITICAL: ${card} is marked as solution AND owned by ${player}`);
+                        }
+                    });
+                });
+            });
+
+            // Check for impossible constraints
+            if (game.showConstraints) {
+                game.showConstraints.forEach((constraint, idx) => {
+                    const possibleCards = constraint.cards.filter(card => 
+                        game.knowledge[constraint.player][card] !== false
+                    );
+                    
+                    if (possibleCards.length === 0 && !constraint.resolved) {
+                        errors.push(`CRITICAL: Constraint #${idx+1} for ${constraint.player} has no possible cards: ${constraint.cards.join(', ')}`);
+                    }
+                });
+            }
+
+            // NEW: Check if all cards in a category are accounted for in hands (should have 1 in solution)
+            ['suspect', 'weapon', 'location'].forEach(type => {
+                let cards;
+                if (type === 'suspect') cards = game.suspects;
+                else if (type === 'weapon') cards = WEAPONS;
+                else cards = LOCATIONS;
+                
+                const inHands = cards.filter(card => 
+                    game.players.some(p => game.knowledge[p][card] === true)
+                );
+                
+                const allEliminated = cards.filter(card =>
+                    game.players.every(p => game.knowledge[p][card] === false)
+                );
+                
+                if (inHands.length === cards.length) {
+                    errors.push(`CRITICAL: All ${type}s are in player hands - none left for solution! ${inHands.join(', ')}`);
+                } else if (allEliminated.length > 1) {
+                    errors.push(`CRITICAL: Multiple ${type}s have all X's (should be in solution): ${allEliminated.join(', ')}`);
+                }
+            });
+
+            // NEW: Check for contradictory guess data (but allow guesser to bluff)
+            game.guesses.forEach((guess, idx) => {
+                const cards = [guess.suspect, guess.weapon, guess.location];
+                
+                // Check if someone (NOT the guesser) said NO_CARDS but we know they have one of the cards
+                guess.responses.forEach(response => {
+                    if (response.cardShown === 'NO_CARDS' && response.player !== guess.guesser) {
+                        cards.forEach(card => {
+                            if (game.knowledge[response.player][card] === true) {
+                                errors.push(`CRITICAL: Guess #${idx+1} - ${response.player} said NO_CARDS but has ${card}!`);
+                            }
+                        });
+                    }
+                });
+            });
+
+            // NEW: Check for overlapping constraints that might lead to false deductions
+            if (game.showConstraints) {
+                const constraintsByPlayer = {};
+                game.showConstraints.forEach((c, idx) => {
+                    if (!constraintsByPlayer[c.player]) {
+                        constraintsByPlayer[c.player] = [];
+                    }
+                    constraintsByPlayer[c.player].push({ index: idx, cards: c.cards, resolved: c.resolved });
+                });
+                
+                Object.entries(constraintsByPlayer).forEach(([player, constraints]) => {
+                    if (constraints.length >= 2) {
+                        // Check for overlapping cards
+                        for (let i = 0; i < constraints.length; i++) {
+                            for (let j = i + 1; j < constraints.length; j++) {
+                                const common = constraints[i].cards.filter(c => 
+                                    constraints[j].cards.includes(c)
+                                );
+                                if (common.length > 0 && !constraints[i].resolved && !constraints[j].resolved) {
+                                    warnings.push(`⚠️ ${player} has overlapping constraints (#${constraints[i].index + 1} and #${constraints[j].index + 1}) with common cards: ${common.join(', ')}. Cannot assume they have the common card!`);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            return { errors, warnings };
+        }
+
+        function generateFullLog() {
+            const log = {
+                timestamp: new Date().toISOString(),
+                gameState: game,
+                validation: validateGameState(),
+                analysis: analyzeGameState()
+            };
+
+            return JSON.stringify(log, null, 2);
+        }
+
+        function analyzeGameState() {
+            if (!game) return {};
+
+            const allCards = [...game.suspects, ...WEAPONS, ...LOCATIONS];
+            const analysis = {
+                totalCards: allCards.length,
+                cardsInSolution: 3,
+                cardsInHands: allCards.length - 3,
+                cardsPerPlayer: Math.floor((allCards.length - 3) / game.players.length),
+                playerAnalysis: {}
+            };
+
+            game.players.forEach(player => {
+                const confirmed = allCards.filter(c => game.knowledge[player][c] === true);
+                const maybe = allCards.filter(c => game.knowledge[player][c] === 'maybe');
+                const possible = allCards.filter(c => game.knowledge[player][c] !== true && game.knowledge[player][c] !== false);
+                const eliminated = allCards.filter(c => game.knowledge[player][c] === false);
+
+                analysis.playerAnalysis[player] = {
+                    confirmed: confirmed.length,
+                    confirmedCards: confirmed,
+                    maybe: maybe.length,
+                    maybeCards: maybe,
+                    possible: possible.length,
+                    eliminated: eliminated.length,
+                    needsToFind: analysis.cardsPerPlayer - confirmed.length
+                };
+            });
+
+            return analysis;
+        }
+
+        function renderNoData() {
+            document.getElementById('content').innerHTML = `
+                <div class="no-data">
+                    <h2>No Game Data Found</h2>
+                    <p>Please start a game in the main tracker first.</p>
+                </div>
+            `;
+        }
+
+        function renderDiagnostics() {
+            const content = document.getElementById('content');
+            const validation = validateGameState();
+            const analysis = analyzeGameState();
+
+            let html = '';
+
+            // Validation Errors
+            if (validation.errors.length > 0 || validation.warnings.length > 0) {
+                html += '<div class="section">';
+                html += '<div class="section-title">⚠️ Validation Issues</div>';
+                
+                validation.errors.forEach(error => {
+                    html += `<div class="validation-error">❌ ${error}</div>`;
+                });
+
+                validation.warnings.forEach(warning => {
+                    html += `<div class="validation-error" style="border-left-color: #dcdcaa; color: #dcdcaa;">⚠️ ${warning}</div>`;
+                });
+                
+                html += '</div>';
+            }
+
+            // Game Stats
+            html += '<div class="section">';
+            html += '<div class="section-title">📊 Game Statistics</div>';
+            html += '<div class="stats-grid">';
+            html += `<div class="stat-box"><div class="stat-label">Players</div><div class="stat-value">${game.players.length}</div></div>`;
+            html += `<div class="stat-box"><div class="stat-label">Total Guesses</div><div class="stat-value">${game.guesses.length}</div></div>`;
+            html += `<div class="stat-box"><div class="stat-label">Constraints</div><div class="stat-value">${game.showConstraints ? game.showConstraints.length : 0}</div></div>`;
+            html += `<div class="stat-box"><div class="stat-label">Cards Per Player</div><div class="stat-value">${analysis.cardsPerPlayer}</div></div>`;
+            html += '</div>';
+            html += '</div>';
+
+            // Player Analysis
+            html += '<div class="section">';
+            html += '<div class="section-title">👥 Player Analysis</div>';
+            
+            game.players.forEach(player => {
+                const pa = analysis.playerAnalysis[player];
+                html += `<div class="stat-box" style="margin-bottom: 15px;">`;
+                html += `<div style="font-weight: bold; color: #4ec9b0; margin-bottom: 10px;">${player}</div>`;
+                html += `<div style="font-size: 0.9rem;">`;
+                html += `Confirmed: <span style="color: #4ec9b0;">${pa.confirmed}/${analysis.cardsPerPlayer}</span> `;
+                html += `| Maybe: <span style="color: #569cd6;">${pa.maybe}</span> `;
+                html += `| Needs: <span style="color: #dcdcaa;">${pa.needsToFind}</span><br>`;
+                if (pa.confirmedCards.length > 0) {
+                    html += `<div style="margin-top: 5px; color: #4ec9b0;">✓ ${pa.confirmedCards.join(', ')}</div>`;
+                }
+                if (pa.maybeCards.length > 0) {
+                    html += `<div style="margin-top: 5px; color: #569cd6;">? ${pa.maybeCards.join(', ')}</div>`;
+                }
+                html += `</div></div>`;
+            });
+            
+            html += '</div>';
+
+            // Show Constraints
+            if (game.showConstraints && game.showConstraints.length > 0) {
+                html += '<div class="section">';
+                html += '<div class="section-title">🔗 Show Constraints</div>';
+                
+                game.showConstraints.forEach((constraint, idx) => {
+                    const possibleCards = constraint.cards.filter(c => game.knowledge[constraint.player][c] !== false);
+                    const cssClass = constraint.resolved ? 'constraint-item resolved' : 'constraint-item';
+                    
+                    html += `<div class="${cssClass}">`;
+                    html += `<strong>Constraint #${idx + 1}</strong> - ${constraint.player} has one of: `;
+                    
+                    constraint.cards.forEach(card => {
+                        const state = game.knowledge[constraint.player][card];
+                        if (state === false) {
+                            html += `<span style="text-decoration: line-through; opacity: 0.5;">${card}</span> `;
+                        } else if (state === true) {
+                            html += `<span style="color: #4ec9b0; font-weight: bold;">${card} ✓</span> `;
+                        } else {
+                            html += `<span style="color: #569cd6;">${card}</span> `;
+                        }
+                    });
+                    
+                    html += `<br><span style="font-size: 0.85rem; color: #858585;">Possible: ${possibleCards.length} | ${constraint.resolved ? 'RESOLVED' : 'ACTIVE'}</span>`;
+                    html += '</div>';
+                });
+                
+                html += '</div>';
+            }
+
+            // Guess History
+            html += '<div class="section">';
+            html += '<div class="section-title">📝 Guess History</div>';
+            
+            game.guesses.forEach((guess, idx) => {
+                html += `<div class="guess-item">`;
+                html += `<div class="guess-header">Guess #${idx + 1}: ${guess.guesser} → ${guess.suspect}, ${guess.weapon}, ${guess.location}</div>`;
+                
+                if (guess.responses && guess.responses.length > 0) {
+                    html += '<div style="margin-top: 5px; font-size: 0.9rem;">';
+                    guess.responses.forEach(resp => {
+                        let responseText = '';
+                        if (resp.cardShown === 'NO_CARDS') {
+                            responseText = '❌ No cards';
+                        } else if (resp.cardShown === null) {
+                            responseText = '❓ Unknown card';
+                        } else {
+                            responseText = `✓ ${resp.cardShown}`;
+                        }
+                        html += `${resp.player}: ${responseText}<br>`;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<div style="color: #858585; font-size: 0.9rem;">No responses</div>';
+                }
+                
+                html += '</div>';
+            });
+            
+            html += '</div>';
+
+            // Solution State
+            html += '<div class="section">';
+            html += '<div class="section-title">🎯 Solution State</div>';
+            
+            ['suspect', 'weapon', 'location'].forEach(type => {
+                let cards;
+                if (type === 'suspect') cards = game.suspects;
+                else if (type === 'weapon') cards = WEAPONS;
+                else cards = LOCATIONS;
+
+                const mustBe = game.solutionMustBe[type];
+                const cannotBe = game.solutionCannotBe[type];
+                const possible = cards.filter(c => !cannotBe.includes(c) && !mustBe.includes(c));
+
+                html += `<div style="margin-bottom: 15px;">`;
+                html += `<strong style="color: #4ec9b0; text-transform: uppercase;">${type}:</strong><br>`;
+                
+                if (mustBe.length > 0) {
+                    html += `<span style="color: #4ec9b0;">✓✓ MUST BE: ${mustBe.join(', ')}</span><br>`;
+                }
+                if (possible.length > 0) {
+                    html += `<span style="color: #dcdcaa;">? Possible: ${possible.join(', ')}</span><br>`;
+                }
+                if (cannotBe.length > 0 && cannotBe.length <= 4) {
+                    html += `<span style="color: #858585;">✗ Cannot be: ${cannotBe.join(', ')}</span>`;
+                }
+                
+                html += '</div>';
+            });
+            
+            html += '</div>';
+
+            // Full JSON Export
+            html += '<div class="section">';
+            html += '<div class="section-title">💾 Full Game State (JSON)</div>';
+            html += '<div class="code-block" id="jsonBlock">' + generateFullLog() + '</div>';
+            html += '<button class="copy-btn" onclick="copyLog()">📋 Copy to Clipboard</button>';
+            html += '</div>';
+
+            content.innerHTML = html;
+        }
+
+        function copyLog() {
+            const logText = generateFullLog();
+            navigator.clipboard.writeText(logText).then(() => {
+                alert('Log copied to clipboard! You can paste this to Claude for analysis.');
+            });
+        }
+
+        function downloadLog() {
+            const logText = generateFullLog();
+            const blob = new Blob([logText], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clue-diagnostic-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function loadAndRender() {
+            if (loadGame()) {
+                renderDiagnostics();
+            } else {
+                renderNoData();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAndRender();
+            setInterval(loadAndRender, 3000);
+        });
+    </script>
+</body>
+</html>

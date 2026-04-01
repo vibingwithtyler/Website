@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Intelligence - Clue Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        .site-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 10px 20px; background: rgba(30, 30, 30, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #3e3e42; }
+        .site-nav a { color: #4ec9b0; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: opacity 0.2s; }
+        .site-nav a:hover { opacity: 0.7; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 50px 20px 20px;
+        }
+        
+        header {
+            background: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        h1 { color: #4ec9b0; margin-bottom: 10px; }
+        
+        .nav-links {
+            margin-top: 10px;
+        }
+        
+        .nav-links a {
+            color: #4ec9b0;
+            margin-right: 15px;
+            text-decoration: none;
+        }
+        
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        
+        .player-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .player-card {
+            background: #252526;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #3e3e42;
+        }
+        
+        .player-card.you {
+            border-color: #f39c12;
+        }
+        
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3e3e42;
+        }
+        
+        .player-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #4ec9b0;
+        }
+        
+        .you-badge {
+            background: #f39c12;
+            color: #1e1e1e;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .card-stats {
+            margin: 15px 0;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #3e3e42;
+        }
+        
+        .stat-label {
+            color: #858585;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #dcdcaa;
+        }
+        
+        .category-breakdown {
+            margin: 15px 0;
+            padding: 15px;
+            background: #1e1e1e;
+            border-radius: 6px;
+        }
+        
+        .category-title {
+            color: #569cd6;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .category-bar {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+        
+        .category-bar-label {
+            min-width: 100px;
+            color: #858585;
+            font-size: 0.9em;
+        }
+        
+        .category-bar-visual {
+            flex: 1;
+            height: 20px;
+            background: #2d2d30;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+        
+        .category-bar-fill {
+            height: 100%;
+            background: #4ec9b0;
+            transition: width 0.3s;
+        }
+        
+        .category-bar-text {
+            min-width: 60px;
+            text-align: right;
+            color: #d4d4d4;
+            font-size: 0.9em;
+        }
+        
+        .knowledge-section {
+            margin: 15px 0;
+        }
+        
+        .knowledge-title {
+            color: #ce9178;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .knowledge-list {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 6px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .knowledge-item {
+            padding: 4px 0;
+            color: #858585;
+            font-size: 0.9em;
+        }
+        
+        .knowledge-item.confirmed {
+            color: #4ec9b0;
+        }
+        
+        .no-data {
+            background: #252526;
+            padding: 40px;
+            text-align: center;
+            border-radius: 8px;
+            color: #858585;
+        }
+        
+        .refresh-info {
+            text-align: center;
+            color: #858585;
+            font-size: 0.9em;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="site-nav"><a href="/">← Vibing with Code</a></nav>
+    <header>
+        <h1>🧠 Player Intelligence Analysis</h1>
+        <p>Track what each player knows based on guess responses</p>
+        <div class="nav-links">
+            <a href="clue_tracker_v3.html">← Back to Tracker</a>
+            <a href="clue_possibilities_v2.html">Possibilities</a>
+            <a href="clue_diagnostic.html">Diagnostic</a>
+            <a href="clue_stats_graph.html">Stats</a>
+        </div>
+    </header>
+    
+    <div class="refresh-info">Auto-refreshes every 3 seconds</div>
+    
+    <div id="content"></div>
+    
+    <script>
+        const SUSPECTS = ["Scarlett", "Green", "Peacock", "Plum", "Mustard", "Orchid"];
+        const WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"];
+        const LOCATIONS = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Billiard Room", "Library", "Lounge", "Hall", "Study"];
+        
+        function analyzePlayerKnowledge() {
+            const saved = localStorage.getItem('clueGame');
+            if (!saved) {
+                document.getElementById('content').innerHTML = '<div class="no-data">No game data found. Start a game in the tracker first!</div>';
+                return;
+            }
+            
+            const game = JSON.parse(saved);
+            const analysis = {};
+            
+            // Initialize analysis for each player - what THEY know from THEIR perspective
+            game.players.forEach(player => {
+                analysis[player] = {
+                    theirCards: [], // Cards they hold in their hand
+                    seenSuspects: new Set(),
+                    seenWeapons: new Set(),
+                    seenLocations: new Set(),
+                    totalCards: game.playerCardCounts[player] || 3,
+                    suspectProgress: { seen: 0, total: SUSPECTS.length },
+                    weaponProgress: { seen: 0, total: WEAPONS.length },
+                    locationProgress: { seen: 0, total: LOCATIONS.length }
+                };
+            });
+            
+            // Step 1: Each player knows their own cards
+            game.players.forEach(player => {
+                const knowledge = game.knowledge[player];
+                Object.entries(knowledge).forEach(([card, state]) => {
+                    if (state === true) {
+                        analysis[player].theirCards.push(card);
+                        
+                        // They've "seen" their own cards
+                        if (SUSPECTS.includes(card)) analysis[player].seenSuspects.add(card);
+                        else if (WEAPONS.includes(card)) analysis[player].seenWeapons.add(card);
+                        else if (LOCATIONS.includes(card)) analysis[player].seenLocations.add(card);
+                    }
+                });
+            });
+            
+            // Step 2: Track what each player learns from guess responses
+            if (game.guesses) {
+                game.guesses.forEach(guess => {
+                    const guesser = guess.guesser;
+                    const cards = [guess.suspect, guess.weapon, guess.location];
+                    
+                    // The guesser learns from all responses
+                    guess.responses.forEach(response => {
+                        if (response.cardShown && response.cardShown !== 'NO_CARDS') {
+                            // Guesser saw this specific card
+                            const card = response.cardShown;
+                            if (SUSPECTS.includes(card)) analysis[guesser].seenSuspects.add(card);
+                            else if (WEAPONS.includes(card)) analysis[guesser].seenWeapons.add(card);
+                            else if (LOCATIONS.includes(card)) analysis[guesser].seenLocations.add(card);
+                        } else if (response.cardShown === null) {
+                            // Guesser knows responder has ONE of the three cards (but not which)
+                            // We'll count this as partial knowledge - they know these cards exist
+                            // but don't know which specific one
+                        }
+                    });
+                    
+                    // Other players who watched this guess also learn
+                    game.players.forEach(observer => {
+                        if (observer === guesser) return; // Already handled
+                        
+                        guess.responses.forEach(response => {
+                            if (response.player === observer) return; // Don't learn from your own response
+                            
+                            if (response.cardShown && response.cardShown !== 'NO_CARDS') {
+                                // Observer sees someone show a card (they know which card it is if shown publicly)
+                                const card = response.cardShown;
+                                if (SUSPECTS.includes(card)) analysis[observer].seenSuspects.add(card);
+                                else if (WEAPONS.includes(card)) analysis[observer].seenWeapons.add(card);
+                                else if (LOCATIONS.includes(card)) analysis[observer].seenLocations.add(card);
+                            }
+                        });
+                    });
+                });
+            }
+            
+            // Calculate progress percentages
+            game.players.forEach(player => {
+                analysis[player].suspectProgress.seen = analysis[player].seenSuspects.size;
+                analysis[player].weaponProgress.seen = analysis[player].seenWeapons.size;
+                analysis[player].locationProgress.seen = analysis[player].seenLocations.size;
+                
+                // Check if they can deduce solution (seen all but one in each category)
+                analysis[player].canDeduceSuspect = analysis[player].suspectProgress.seen === SUSPECTS.length - 1;
+                analysis[player].canDeduceWeapon = analysis[player].weaponProgress.seen === WEAPONS.length - 1;
+                analysis[player].canDeduceLocation = analysis[player].locationProgress.seen === LOCATIONS.length - 1;
+                
+                analysis[player].closeToWinning = 
+                    (analysis[player].canDeduceSuspect ? 1 : 0) +
+                    (analysis[player].canDeduceWeapon ? 1 : 0) +
+                    (analysis[player].canDeduceLocation ? 1 : 0);
+            });
+            
+            return { game, analysis };
+        }
+        
+        function renderAnalysis() {
+            const result = analyzePlayerKnowledge();
+            if (!result) return;
+            
+            const { game, analysis } = result;
+            const myPlayerIndex = game.myPlayerIndex || -1;
+            
+            let html = '<div class="player-cards">';
+            
+            game.players.forEach((player, idx) => {
+                const playerAnalysis = analysis[player];
+                const isYou = idx === myPlayerIndex;
+                
+                html += `<div class="player-card ${isYou ? 'you' : ''}">`;
+                
+                // Header
+                html += `<div class="player-header">`;
+                html += `<span class="player-name">${player}</span>`;
+                if (isYou) html += `<span class="you-badge">YOU</span>`;
+                html += `</div>`;
+                
+                // Danger warning if close to winning
+                if (playerAnalysis.closeToWinning >= 2 && !isYou) {
+                    html += `<div style="background: #e74c3c; color: white; padding: 10px; border-radius: 6px; margin-bottom: 15px; text-align: center; font-weight: bold;">`;
+                    html += `⚠️ DANGER: ${playerAnalysis.closeToWinning}/3 categories solved!`;
+                    html += `</div>`;
+                }
+                
+                // Card stats
+                html += `<div class="card-stats">`;
+                html += `<div class="stat-row">`;
+                html += `<span class="stat-label">Their Hand:</span>`;
+                html += `<span class="stat-value">${playerAnalysis.theirCards.length} cards</span>`;
+                html += `</div>`;
+                html += `</div>`;
+                
+                // Category breakdown - what THEY'VE seen
+                html += `<div class="category-breakdown">`;
+                html += `<div class="category-title">What ${player} Has Seen</div>`;
+                
+                // Suspects
+                const suspectSeen = playerAnalysis.suspectProgress.seen;
+                const suspectTotal = playerAnalysis.suspectProgress.total;
+                const suspectPercent = (suspectSeen / suspectTotal) * 100;
+                const suspectStatus = playerAnalysis.canDeduceSuspect ? ' 🎯' : '';
+                html += `<div class="category-bar">`;
+                html += `<span class="category-bar-label">Suspects:</span>`;
+                html += `<div class="category-bar-visual"><div class="category-bar-fill" style="width: ${suspectPercent}%; background: ${playerAnalysis.canDeduceSuspect ? '#e74c3c' : '#4ec9b0'}"></div></div>`;
+                html += `<span class="category-bar-text">${suspectSeen}/${suspectTotal}${suspectStatus}</span>`;
+                html += `</div>`;
+                
+                // Weapons
+                const weaponSeen = playerAnalysis.weaponProgress.seen;
+                const weaponTotal = playerAnalysis.weaponProgress.total;
+                const weaponPercent = (weaponSeen / weaponTotal) * 100;
+                const weaponStatus = playerAnalysis.canDeduceWeapon ? ' 🎯' : '';
+                html += `<div class="category-bar">`;
+                html += `<span class="category-bar-label">Weapons:</span>`;
+                html += `<div class="category-bar-visual"><div class="category-bar-fill" style="width: ${weaponPercent}%; background: ${playerAnalysis.canDeduceWeapon ? '#e74c3c' : '#4ec9b0'}"></div></div>`;
+                html += `<span class="category-bar-text">${weaponSeen}/${weaponTotal}${weaponStatus}</span>`;
+                html += `</div>`;
+                
+                // Locations
+                const locationSeen = playerAnalysis.locationProgress.seen;
+                const locationTotal = playerAnalysis.locationProgress.total;
+                const locationPercent = (locationSeen / locationTotal) * 100;
+                const locationStatus = playerAnalysis.canDeduceLocation ? ' 🎯' : '';
+                html += `<div class="category-bar">`;
+                html += `<span class="category-bar-label">Locations:</span>`;
+                html += `<div class="category-bar-visual"><div class="category-bar-fill" style="width: ${locationPercent}%; background: ${playerAnalysis.canDeduceLocation ? '#e74c3c' : '#4ec9b0'}"></div></div>`;
+                html += `<span class="category-bar-text">${locationSeen}/${locationTotal}${locationStatus}</span>`;
+                html += `</div>`;
+                
+                html += `</div>`;
+                
+                // Their cards
+                if (playerAnalysis.theirCards.length > 0) {
+                    html += `<div class="knowledge-section">`;
+                    html += `<div class="knowledge-title">🃏 Cards in ${player}'s Hand</div>`;
+                    html += `<div class="knowledge-list">`;
+                    playerAnalysis.theirCards.forEach(card => {
+                        html += `<div class="knowledge-item confirmed">${card}</div>`;
+                    });
+                    html += `</div>`;
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            html += '</div>';
+            
+            document.getElementById('content').innerHTML = html;
+        }
+        
+        // Initial render
+        renderAnalysis();
+        
+        // Auto-refresh every 3 seconds
+        setInterval(renderAnalysis, 3000);
+    </script>
+</body>
+</html>
