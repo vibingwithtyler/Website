@@ -11,7 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    .site-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 10px 20px; background: rgba(26, 26, 26, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #333; }
+    .site-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 10px 20px; background: rgba(26, 26, 26, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
     .site-nav a { color: #4ec9b0; text-decoration: none; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 0.85rem; font-weight: 500; transition: opacity 0.2s; }
     .site-nav a:hover { opacity: 0.7; }
     body {
@@ -84,7 +84,7 @@
   </style>
 </head>
 <body>
-  <nav class="site-nav"><a href="/">← Vibing with Code</a></nav>
+  <nav class="site-nav"><a href="/">← Vibing with Code</a><a href="/blog/">Blog</a></nav>
   <div id="root"></div>
 
   <script type="text/babel">
