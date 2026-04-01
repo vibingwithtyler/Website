@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog | Vibing with Code</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .site-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 10px 20px;
+            background: rgba(30, 30, 30, 0.92);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #3e3e42;
+        }
+        .site-nav a {
+            color: #4ec9b0;
+            text-decoration: none;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        .site-nav a:hover { opacity: 0.7; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d30 100%);
+            color: #d4d4d4;
+            min-height: 100vh;
+            padding: 60px 20px 40px;
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px 30px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #4ec9b0 0%, #0e639c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .tagline {
+            font-size: 1rem;
+            color: #858585;
+            font-weight: 300;
+        }
+
+        /* Post list */
+        .post-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .post-card {
+            background: #252526;
+            border-radius: 10px;
+            padding: 28px;
+            border: 2px solid #3e3e42;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .post-card:hover {
+            border-color: #4ec9b0;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(78, 201, 176, 0.15);
+        }
+
+        .post-date {
+            font-size: 0.8rem;
+            color: #858585;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        .post-card-title {
+            font-size: 1.4rem;
+            color: #4ec9b0;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .post-preview {
+            color: #9d9d9d;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* Single post view */
+        .post-view {
+            display: none;
+        }
+
+        .post-view.active {
+            display: block;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #4ec9b0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .back-link:hover { opacity: 0.7; }
+
+        .post-meta {
+            color: #858585;
+            font-size: 0.85rem;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .post-content {
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        .post-content h1 {
+            font-size: 2rem;
+            -webkit-text-fill-color: #4ec9b0;
+            margin-bottom: 10px;
+        }
+
+        .post-content h2 {
+            font-size: 1.4rem;
+            color: #4ec9b0;
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+
+        .post-content h3 {
+            font-size: 1.15rem;
+            color: #4ec9b0;
+            margin-top: 24px;
+            margin-bottom: 10px;
+        }
+
+        .post-content p {
+            margin-bottom: 16px;
+            color: #d4d4d4;
+        }
+
+        .post-content a {
+            color: #4ec9b0;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .post-content a:hover { opacity: 0.7; }
+
+        .post-content ul, .post-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+
+        .post-content li {
+            margin-bottom: 6px;
+            line-height: 1.7;
+        }
+
+        .post-content strong {
+            color: #e8e8e8;
+        }
+
+        .post-content code {
+            background: #1e1e1e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #ce9178;
+        }
+
+        .post-content pre {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .post-content blockquote {
+            border-left: 3px solid #4ec9b0;
+            padding-left: 16px;
+            margin-bottom: 16px;
+            color: #9d9d9d;
+            font-style: italic;
+        }
+
+        .post-content img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+
+        .loading {
+            text-align: center;
+            color: #858585;
+            padding: 40px;
+            font-size: 0.95rem;
+        }
+
+        .error {
+            text-align: center;
+            color: #e05a5a;
+            padding: 40px;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .post-card { padding: 20px; }
+            .post-card-title { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="site-nav"><a href="/">← Vibing with Code</a></nav>
+
+    <div class="container">
+        <header>
+            <h1>Blog</h1>
+            <p class="tagline">Thoughts, projects, and things I'm learning</p>
+        </header>
+
+        <div id="postList" class="post-list">
+            <div class="loading">Loading posts...</div>
+        </div>
+
+        <div id="postView" class="post-view">
+            <a class="back-link" onclick="showList()">← Back to all posts</a>
+            <div class="post-meta" id="postMeta"></div>
+            <div class="post-content" id="postContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const GITHUB_USER = 'vibingwithtyler';
+        const GITHUB_REPO = 'Website';
+        const POSTS_PATH = 'blog/posts';
+        const API_BASE = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${POSTS_PATH}`;
+
+        let posts = [];
+
+        // Parse filename: 2026-03-31-hello-world.md → { date, slug, filename }
+        function parseFilename(filename) {
+            const match = filename.match(/^(\d{4}-\d{2}-\d{2})-(.+)\.md$/);
+            if (!match) return null;
+            return {
+                date: match[1],
+                slug: match[2],
+                filename: filename
+            };
+        }
+
+        function formatDate(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            const date = new Date(year, month - 1, day);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        async function loadPosts() {
+            const listEl = document.getElementById('postList');
+
+            try {
+                const response = await fetch(API_BASE);
+                if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
+
+                const files = await response.json();
+                posts = files
+                    .map(f => ({ ...parseFilename(f.name), download_url: f.download_url }))
+                    .filter(p => p !== null && p.date !== undefined)
+                    .sort((a, b) => b.date.localeCompare(a.date));
+
+                if (posts.length === 0) {
+                    listEl.innerHTML = '<div class="loading">No posts yet. Check back soon!</div>';
+                    return;
+                }
+
+                // Fetch first ~200 chars of each post for preview
+                const previews = await Promise.all(posts.map(async (post) => {
+                    try {
+                        const res = await fetch(post.download_url);
+                        const text = await res.text();
+                        // Strip markdown heading and get first paragraph
+                        const stripped = text.replace(/^#.*\n+/, '').trim();
+                        const firstPara = stripped.split('\n\n')[0].replace(/[#*_\[\]()]/g, '');
+                        return firstPara.slice(0, 180) + (firstPara.length > 180 ? '...' : '');
+                    } catch {
+                        return '';
+                    }
+                }));
+
+                listEl.innerHTML = posts.map((post, i) => {
+                    // Title from slug: hello-world → Hello World
+                    const title = post.slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    return `
+                        <div class="post-card" onclick="showPost('${post.slug}')">
+                            <div class="post-date">${formatDate(post.date)}</div>
+                            <div class="post-card-title">${title}</div>
+                            <div class="post-preview">${previews[i]}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Check if URL has a post param
+                const params = new URLSearchParams(window.location.search);
+                const postSlug = params.get('post');
+                if (postSlug) showPost(postSlug);
+
+            } catch (err) {
+                listEl.innerHTML = `<div class="error">Could not load posts. ${err.message}</div>`;
+            }
+        }
+
+        async function showPost(slug) {
+            const post = posts.find(p => p.slug === slug);
+            if (!post) return;
+
+            const listEl = document.getElementById('postList');
+            const viewEl = document.getElementById('postView');
+            const metaEl = document.getElementById('postMeta');
+            const contentEl = document.getElementById('postContent');
+
+            listEl.style.display = 'none';
+            viewEl.classList.add('active');
+
+            const title = post.slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            metaEl.textContent = formatDate(post.date);
+            contentEl.innerHTML = '<div class="loading">Loading post...</div>';
+
+            // Update URL without reload
+            history.pushState(null, '', `?post=${slug}`);
+            document.title = `${title} | Vibing with Code`;
+
+            try {
+                const res = await fetch(post.download_url);
+                const markdown = await res.text();
+                contentEl.innerHTML = marked.parse(markdown);
+            } catch (err) {
+                contentEl.innerHTML = `<div class="error">Could not load post. ${err.message}</div>`;
+            }
+        }
+
+        function showList() {
+            document.getElementById('postList').style.display = 'flex';
+            document.getElementById('postView').classList.remove('active');
+            history.pushState(null, '', '/blog/');
+            document.title = 'Blog | Vibing with Code';
+        }
+
+        // Handle browser back button
+        window.addEventListener('popstate', () => {
+            const params = new URLSearchParams(window.location.search);
+            const postSlug = params.get('post');
+            if (postSlug) {
+                showPost(postSlug);
+            } else {
+                showList();
+            }
+        });
+
+        loadPosts();
+    </script>
+</body>
+</html>
