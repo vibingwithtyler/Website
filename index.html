@@ -11,6 +11,7 @@
     <meta property="og:description" content="Free online tools for word games and board games. WordleBot, Connections Organizer, Spelling Bee Tracker, and Clue Tracker.">
     <meta property="og:url" content="https://tylervibes.com/">
     <meta name="twitter:card" content="summary">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <style>
         * {
             margin: 0;
@@ -94,29 +95,6 @@
         
         .project-card:hover::before {
             transform: scaleX(1);
-        }
-        
-        .project-card.featured {
-            border: 2px solid #4ec9b0;
-            background: linear-gradient(135deg, #252526 0%, #2d3436 100%);
-        }
-        
-        .project-card.featured::before {
-            transform: scaleX(1);
-            background: linear-gradient(90deg, #4ec9b0, #27ae60);
-        }
-        
-        .featured-badge {
-            display: inline-block;
-            background: #4ec9b0;
-            color: #1e1e1e;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
         
         .project-icon {
@@ -231,11 +209,53 @@
         .coming-soon {
             opacity: 0.6;
         }
-        
+
         .coming-soon .project-title::after {
             content: ' (Coming Soon)';
             font-size: 0.8rem;
             color: #858585;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header {
+            animation: fadeInUp 0.6s ease both;
+        }
+
+        .project-card {
+            animation: fadeInUp 0.5s ease both;
+        }
+
+        .project-card:nth-child(1) { animation-delay: 0.1s; }
+        .project-card:nth-child(2) { animation-delay: 0.2s; }
+        .project-card:nth-child(3) { animation-delay: 0.3s; }
+        .project-card:nth-child(4) { animation-delay: 0.4s; }
+
+        .about {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 50px;
+            color: #858585;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .about a {
+            color: #4ec9b0;
+            text-decoration: none;
+        }
+
+        .about a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -246,7 +266,12 @@
             <h1>Vibing with Code</h1>
             <p class="tagline">Building cool stuff, one project at a time</p>
         </header>
-        
+
+        <p class="about">
+            Hey, I'm Tyler. I build free tools for the games and puzzles I love playing.
+            Everything here runs right in your browser — no downloads, no signups, no ads.
+        </p>
+
         <div class="projects-grid">
             <!-- Clue Tracker -->
             <div class="project-card">
