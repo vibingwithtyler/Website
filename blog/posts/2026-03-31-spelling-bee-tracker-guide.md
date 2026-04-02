@@ -1,3 +1,5 @@
+<span class="ai-badge">Written with AI</span>
+
 # Spelling Bee Tracker: Never Miss Another Word on Your Way to Queen Bee
 
 If you're chasing Genius or Queen Bee on the NYT Spelling Bee, you know the pain. You've found 30 words, you're stuck, and the hint grid is taunting you with numbers you can't crack. You know there's a 5-letter word starting with "P" that you're missing, but you just can't see it.

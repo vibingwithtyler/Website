@@ -1,3 +1,5 @@
+<span class="ai-badge">Written with AI</span>
+
 # Connections Organizer: A Free Tool to Sort and Solve NYT Connections
 
 The NYT Connections puzzle gives you 16 words and asks you to sort them into four groups of four. Sounds simple, right? It's not. The words are deliberately chosen to have overlapping possible connections, and you only get four mistakes before it's game over.

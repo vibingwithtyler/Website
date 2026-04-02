@@ -1,3 +1,5 @@
+<span class="ai-badge">Written with AI</span>
+
 # WordleBot 2.0: A Free Wordle Solver That Actually Helps You Learn
 
 If you play Wordle every day, you've probably had that moment where you're staring at five gray and yellow squares, three guesses deep, and you just *can't* think of what fits. That's exactly why I built WordleBot 2.0.

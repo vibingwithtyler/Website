@@ -1,3 +1,5 @@
+<span class="ai-badge">Written with AI</span>
+
 # Clue Tracker: A Deduction Engine for the Board Game Clue
 
 If you've ever played Clue and lost track of who showed what card three turns ago, this one's for you.
