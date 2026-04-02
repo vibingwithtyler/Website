@@ -616,22 +616,8 @@
                     .map(f => ({ ...parseFilename(f.name), download_url: f.download_url, path: f.path }))
                     .filter(p => p !== null && p.date !== undefined);
 
-                // Fetch actual commit dates from GitHub for accurate ordering
-                const COMMITS_API = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/commits`;
-                await Promise.all(posts.map(async (post) => {
-                    try {
-                        const res = await fetch(`${COMMITS_API}?path=${post.path}&per_page=1`);
-                        if (res.ok) {
-                            const commits = await res.json();
-                            if (commits.length > 0) {
-                                post.committedAt = commits[0].commit.committer.date;
-                            }
-                        }
-                    } catch {}
-                    if (!post.committedAt) post.committedAt = post.date;
-                }));
-
-                posts.sort((a, b) => b.committedAt.localeCompare(a.committedAt));
+                // Sort by filename date (newest first)
+                posts.sort((a, b) => b.date.localeCompare(a.date));
 
                 if (posts.length === 0) {
                     listEl.innerHTML = '<div class="loading">No posts yet. Check back soon!</div>';
